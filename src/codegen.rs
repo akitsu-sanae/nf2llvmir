@@ -26,24 +26,28 @@ type Env = HashMap<Ident, LValue>;
 
 fn apply_nf(base: &mut Base, nf: &Nf) -> Result<(), Error> {
     let mut env = Env::new();
+
     for func in nf.funcs.iter() {
-        let gen_func = apply_func(base, func, &env)?;
+        let gen_func = add_function(base, func)?;
         env.insert(func.name.clone(), gen_func);
     }
-    apply_func(
-        base,
-        &Func {
-            name: Ident::new("main"),
-            params: vec![],
-            ret_type: Type::Int,
-            body: nf.body.clone(),
-        },
-        &env,
-    );
+
+    for func in nf.funcs.iter() {
+        let gen_func = env.get(&func.name).unwrap();
+        add_function_body(base, *gen_func, func, &env)?;
+    }
+    let main_func = Func {
+        name: Ident::new("main"),
+        params: vec![],
+        ret_type: Type::Int,
+        body: nf.body.clone(),
+    };
+    let gen_main_func = add_function(base, &main_func)?;
+    add_function_body(base, gen_main_func, &main_func, &env)?;
     Ok(())
 }
 
-fn apply_func(base: &mut Base, func: &Func, env: &Env) -> Result<LValue, Error> {
+fn add_function(base: &mut Base, func: &Func) -> Result<LValue, Error> {
     let param_types: Result<_, _> = func
         .params
         .iter()
@@ -52,9 +56,28 @@ fn apply_func(base: &mut Base, func: &Func, env: &Env) -> Result<LValue, Error> 
     let mut param_types = param_types?;
     let ret_ty = apply_type(&func.ret_type, base)?;
     let func_ty = typ::func(&mut param_types, ret_ty);
-    let gen_func = util::add_function(base.module, func.name.0.as_str(), func_ty);
+    Ok(util::add_function(
+        base.module,
+        func.name.0.as_str(),
+        func_ty,
+    ))
+}
+
+fn add_function_body(
+    base: &mut Base,
+    gen_func: LValue,
+    func: &Func,
+    env: &Env,
+) -> Result<(), Error> {
     util::add_entry_block(gen_func, base);
     let mut env = env.clone();
+    let param_types: Result<_, _> = func
+        .params
+        .iter()
+        .map(|&(_, ref ty)| apply_type(ty, base))
+        .collect();
+    let param_types: Vec<_> = param_types?;
+
     for (i, param) in func.params.iter().enumerate() {
         let typ = param_types[i];
         let var = build::declare(
@@ -68,7 +91,7 @@ fn apply_func(base: &mut Base, func: &Func, env: &Env) -> Result<LValue, Error> 
 
     let expr = apply_expr(&func.body, &env, base)?;
     build::ret(expr, base.builder);
-    Ok(gen_func)
+    Ok(())
 }
 
 fn apply_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
