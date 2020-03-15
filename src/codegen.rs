@@ -10,7 +10,7 @@ pub use self::lit::*;
 pub use self::typ::*;
 pub use self::util::*;
 
-use crate::{Error, Expr, Func, Ident, Literal, Nf, Type};
+use crate::{BinOp, Error, Expr, Func, Ident, Literal, Nf, Type};
 use std::collections::HashMap;
 use std::io::Write;
 
@@ -107,7 +107,9 @@ fn apply_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
             let mut args = args?;
             Ok(build::call(func, &mut args, base.builder))
         }
-        _ => unimplemented!(),
+        Expr::If(box ref cond, box ref e1, box ref e2) => apply_if_expr(cond, e1, e2, env, base),
+        Expr::BinOp(op, box ref e1, box ref e2) => apply_binop_expr(op, e1, e2, env, base),
+        Expr::PrintNum(box ref e) => apply_printnum_expr(e, env, base),
     }
 }
 
@@ -115,8 +117,72 @@ fn apply_literal(lit: &Literal, _env: &Env, base: &Base) -> Result<LValue, Error
     match lit {
         Literal::Bool(b) => Ok(lit::bool(*b, base.context)),
         Literal::Int(n) => Ok(lit::int32(*n, base.context)),
-        _ => unimplemented!(),
+        Literal::Char(c) => Ok(lit::char(*c, base.context)),
     }
+}
+
+fn apply_if_expr(
+    cond: &Expr,
+    e1: &Expr,
+    e2: &Expr,
+    env: &Env,
+    base: &Base,
+) -> Result<LValue, Error> {
+    let cond = apply_expr(cond, env, base)?;
+    let insertion_block = util::insertion_block(base.builder);
+    let then_block = append_block(insertion_block, base);
+    let else_block = append_block(then_block, base);
+    let merge_block = append_block(else_block, base);
+
+    build::cond_branch(cond, then_block, else_block, base.builder);
+
+    // code generation for then-block
+    util::position_at_end(then_block, base.builder);
+    let e1 = apply_expr(e1, env, base)?;
+    build::branch(merge_block, base.builder);
+    let then_block = util::insertion_block(base.builder);
+
+    // code generation for else-block
+    util::position_at_end(else_block, base.builder);
+    let e2 = apply_expr(e2, env, base)?;
+    build::branch(merge_block, base.builder);
+    let else_block = util::insertion_block(base.builder);
+
+    // code generation for merge-block
+    util::position_at_end(merge_block, base.builder);
+    Ok(build::phi(
+        typ::type_of(e1),
+        vec![(e1, then_block), (e2, else_block)],
+        base.builder,
+    ))
+}
+
+fn apply_binop_expr(
+    op: &BinOp,
+    e1: &Expr,
+    e2: &Expr,
+    env: &Env,
+    base: &Base,
+) -> Result<LValue, Error> {
+    let e1 = apply_expr(e1, env, base)?;
+    let e2 = apply_expr(e2, env, base)?;
+    match op {
+        BinOp::Add => Ok(build::add(e1, e2, base.builder)),
+        BinOp::Sub => Ok(build::sub(e1, e2, base.builder)),
+        BinOp::Mult => Ok(build::mult(e1, e2, base.builder)),
+        BinOp::Div => Ok(build::div(e1, e2, base.builder)),
+        BinOp::Eq => Ok(build::eq(e1, e2, base.builder)),
+        BinOp::Neq => Ok(build::neq(e1, e2, base.builder)),
+        BinOp::Lt => Ok(build::lt(e1, e2, base.builder)),
+        BinOp::Gt => Ok(build::gt(e1, e2, base.builder)),
+        BinOp::Leq => Ok(build::leq(e1, e2, base.builder)),
+        BinOp::Geq => Ok(build::geq(e1, e2, base.builder)),
+    }
+}
+
+fn apply_printnum_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
+    let e = apply_expr(e, env, base)?;
+    Ok(build::builtin::print_num(e, base))
 }
 
 fn apply_type(ty: &Type, base: &Base) -> Result<LType, Error> {
@@ -125,7 +191,12 @@ fn apply_type(ty: &Type, base: &Base) -> Result<LType, Error> {
         Type::Bool => Ok(typ::bool(base.context)),
         Type::Char => Ok(typ::char(base.context)),
         Type::Int => Ok(typ::int32(base.context)),
-        _ => unimplemented!(),
+        Type::Func(ref params, box ret_ty) => {
+            let params: Result<_, _> = params.iter().map(|ty| apply_type(ty, base)).collect();
+            let mut params = params?;
+            let ret_ty = apply_type(ret_ty, base)?;
+            Ok(typ::func(&mut params, ret_ty))
+        }
     }
 }
 
@@ -196,6 +267,44 @@ define i32 @main() {
 entry:
   %0 = call i32 @a()
   ret i32 %0
+}
+"#;
+    codegen_check(&nf, expected.trim());
+}
+
+#[test]
+fn if_test() {
+    let nf = Nf {
+        funcs: vec![],
+        body: Expr::If(
+            box Expr::Const(Literal::Bool(true)),
+            box Expr::Const(Literal::Int(42)),
+            box Expr::Const(Literal::Int(32)),
+        ),
+    };
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @main() {
+entry:
+  br i1 true, label %0, label %1
+
+0:                                                ; preds = %entry
+  br label %2
+
+1:                                                ; preds = %entry
+  br label %2
+
+2:                                                ; preds = %1, %0
+  %3 = phi i32 [ 42, %0 ], [ 32, %1 ]
+  ret i32 %3
 }
 "#;
     codegen_check(&nf, expected.trim());

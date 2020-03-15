@@ -1,4 +1,4 @@
-use crate::{BinOp, Expr, Func, Ident, Literal, Nf, Type};
+use crate::{BinOp, Expr, Ident, Literal, Nf, Type};
 use std::collections::HashMap;
 
 type Error = String; // TODO
@@ -126,6 +126,7 @@ fn primitive_test() {
 
 #[test]
 fn func_test() {
+    use crate::Func;
     let nf = Nf {
         funcs: vec![Func {
             name: Ident::new("a"),
@@ -140,6 +141,7 @@ fn func_test() {
 
 #[test]
 fn apply_test() {
+    use crate::Func;
     let nf = Nf {
         funcs: vec![Func {
             name: Ident::new("a"),

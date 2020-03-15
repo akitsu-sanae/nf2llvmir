@@ -1,5 +1,6 @@
 use super::*;
 use llvm::core::*;
+use llvm::LLVMIntPredicate;
 use std::ffi::CString;
 
 pub fn declare_global(name: &CString, typ: LType, value: LValue, module: LModule) -> LValue {
@@ -123,6 +124,78 @@ pub fn div(lhs: LValue, rhs: LValue, builder: LBuilder) -> LValue {
     unsafe { LLVMBuildSDiv(builder, lhs, rhs, b"\0".as_ptr() as *const _) }
 }
 
+pub fn eq(lhs: LValue, rhs: LValue, builder: LBuilder) -> LValue {
+    unsafe {
+        LLVMBuildICmp(
+            builder,
+            LLVMIntPredicate::LLVMIntEQ,
+            lhs,
+            rhs,
+            b"\0".as_ptr() as *const _,
+        )
+    }
+}
+
+pub fn neq(lhs: LValue, rhs: LValue, builder: LBuilder) -> LValue {
+    unsafe {
+        LLVMBuildICmp(
+            builder,
+            LLVMIntPredicate::LLVMIntNE,
+            lhs,
+            rhs,
+            b"\0".as_ptr() as *const _,
+        )
+    }
+}
+
+pub fn gt(lhs: LValue, rhs: LValue, builder: LBuilder) -> LValue {
+    unsafe {
+        LLVMBuildICmp(
+            builder,
+            LLVMIntPredicate::LLVMIntSGT, // assume signed
+            lhs,
+            rhs,
+            b"\0".as_ptr() as *const _,
+        )
+    }
+}
+
+pub fn geq(lhs: LValue, rhs: LValue, builder: LBuilder) -> LValue {
+    unsafe {
+        LLVMBuildICmp(
+            builder,
+            LLVMIntPredicate::LLVMIntSGE, // assume signed
+            lhs,
+            rhs,
+            b"\0".as_ptr() as *const _,
+        )
+    }
+}
+
+pub fn lt(lhs: LValue, rhs: LValue, builder: LBuilder) -> LValue {
+    unsafe {
+        LLVMBuildICmp(
+            builder,
+            LLVMIntPredicate::LLVMIntSLT, // assume signed
+            lhs,
+            rhs,
+            b"\0".as_ptr() as *const _,
+        )
+    }
+}
+
+pub fn leq(lhs: LValue, rhs: LValue, builder: LBuilder) -> LValue {
+    unsafe {
+        LLVMBuildICmp(
+            builder,
+            LLVMIntPredicate::LLVMIntSLE, // assume signed
+            lhs,
+            rhs,
+            b"\0".as_ptr() as *const _,
+        )
+    }
+}
+
 pub fn branch(block: LBasicBlock, builder: LBuilder) {
     unsafe {
         LLVMBuildBr(builder, block);
@@ -181,7 +254,7 @@ pub fn gep(arr: LValue, idx: LValue, base: &Base) -> LValue {
 
 pub mod builtin {
     use super::*;
-    pub fn print_num(value: LValue, base: &Base) {
+    pub fn print_num(value: LValue, base: &Base) -> LValue {
         unsafe {
             let printf_name = CString::new("printf").unwrap();
             let printf = LLVMGetNamedFunction(base.module, printf_name.as_ptr());
@@ -198,7 +271,7 @@ pub mod builtin {
                 format_ptr_name.as_ptr(),
             );
             let mut args = vec![format_ptr, value];
-            call(printf, &mut args, base.builder);
+            call(printf, &mut args, base.builder)
         }
     }
 }
