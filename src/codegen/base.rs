@@ -1,4 +1,6 @@
 use super::*;
+use std::collections::HashMap;
+use std::ffi::CString;
 
 pub type LContext = llvm::prelude::LLVMContextRef;
 pub type LModule = llvm::prelude::LLVMModuleRef;
@@ -15,10 +17,10 @@ pub struct Base {
 }
 
 impl Base {
-    pub fn new(module: &Module) -> Base {
+    pub fn new(name: &str) -> Base {
         unsafe {
             let context = llvm::core::LLVMContextCreate();
-            let name = util::cstring(&module.name);
+            let name = CString::new(name).unwrap();
             let module = llvm::core::LLVMModuleCreateWithNameInContext(name.as_ptr(), context);
             let builder = llvm::core::LLVMCreateBuilderInContext(context);
 

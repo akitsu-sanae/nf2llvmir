@@ -4,6 +4,7 @@
 extern crate libc;
 extern crate llvm_sys as llvm;
 
+mod codegen;
 mod typecheck;
 
 type Error = String; // TODO
@@ -31,7 +32,7 @@ pub struct Nf {
 }
 
 impl Nf {
-    pub fn codegen<T: std::io::Write>(&self, name: &str, out: T) -> Result<(), Error> {
+    pub fn codegen<T: std::io::Write>(&self, name: &str, out: &mut T) -> Result<(), Error> {
         typecheck::check(self)?;
         codegen::gen(out, self, name)
     }

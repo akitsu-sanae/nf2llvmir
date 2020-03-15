@@ -1,10 +1,9 @@
 use llvm::core::*;
-use std::collections::HashMap;
-use std::sync::RwLock;
+use std::ffi::CString;
 
 use super::*;
 
-pub fn validate_module(module: LModule) -> Result<(), CodegenError> {
+pub fn validate_module(module: LModule) -> Result<(), Error> {
     use llvm::analysis::*;
     let mut err_msg = 0 as *mut i8;
     let buf: *mut *mut i8 = &mut err_msg;
@@ -17,13 +16,13 @@ pub fn validate_module(module: LModule) -> Result<(), CodegenError> {
     };
     if ok != 0 {
         let msg_str = unsafe { CString::from_raw(err_msg).into_string().unwrap() };
-        Err(CodegenError::ModuleValidation(msg_str))
+        Err(msg_str)
     } else {
         Ok(())
     }
 }
 
-pub fn print_module(module: LModule) -> Result<String, CodegenError> {
+pub fn print_module(module: LModule) -> Result<String, Error> {
     unsafe {
         let ir = LLVMPrintModuleToString(module);
         let len = libc::strlen(ir);
@@ -33,7 +32,7 @@ pub fn print_module(module: LModule) -> Result<String, CodegenError> {
 }
 
 pub fn add_function(module: LModule, name: &str, typ: LType) -> LValue {
-    let name = cstring(name);
+    let name = CString::new(name).unwrap();
     unsafe { LLVMAddFunction(module, name.as_ptr(), typ) }
 }
 
@@ -67,19 +66,4 @@ pub fn append_block(prev_block: LBasicBlock, base: &Base) -> LBasicBlock {
         LLVMMoveBasicBlockAfter(block, prev_block);
         block
     }
-}
-
-pub fn cstring(s: &str) -> CString {
-    CString::new(s.as_bytes()).unwrap()
-}
-
-pub mod i_know_what_i_do {
-    pub fn clear_name_counter() {
-        let mut name_counter = super::NAME_COUNTER.write().unwrap();
-        name_counter.clear();
-    }
-}
-
-lazy_static! {
-    static ref NAME_COUNTER: RwLock<HashMap<String, i32>> = RwLock::new(HashMap::new());
 }

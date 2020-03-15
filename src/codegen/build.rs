@@ -1,5 +1,6 @@
 use super::*;
 use llvm::core::*;
+use std::ffi::CString;
 
 pub fn declare_global(name: &CString, typ: LType, value: LValue, module: LModule) -> LValue {
     unsafe {
@@ -10,7 +11,7 @@ pub fn declare_global(name: &CString, typ: LType, value: LValue, module: LModule
 }
 
 pub fn declare(name: &str, typ: LType, init: LValue, builder: LBuilder) -> LValue {
-    let name = cstring(name);
+    let name = CString::new(name).unwrap();
     unsafe {
         let var = LLVMBuildAlloca(builder, typ, name.as_ptr());
         self::store(var, init, builder);
@@ -19,8 +20,8 @@ pub fn declare(name: &str, typ: LType, init: LValue, builder: LBuilder) -> LValu
 }
 
 pub fn declare_array(name: &str, typ: LType, init: LValue, base: &Base) -> LValue {
-    let name = cstring(name);
-    let memcpy_name = cstring("memcpy");
+    let name = CString::new(name).unwrap();
+    let memcpy_name = CString::new("memcpy").unwrap();
     unsafe {
         let var = LLVMBuildAlloca(base.builder, typ, name.as_ptr());
 
@@ -53,8 +54,8 @@ pub fn declare_array(name: &str, typ: LType, init: LValue, base: &Base) -> LValu
 }
 
 pub fn declare_struct(name: &str, typ: LType, init: LValue, base: &Base) -> LValue {
-    let name = cstring(name);
-    let memcpy_name = cstring("memcpy");
+    let name = CString::new(name).unwrap();
+    let memcpy_name = CString::new("memcpy").unwrap();
     unsafe {
         let var = LLVMBuildAlloca(base.builder, typ, name.as_ptr());
 
@@ -182,11 +183,14 @@ pub mod builtin {
     use super::*;
     pub fn print_num(value: LValue, base: &Base) {
         unsafe {
-            let printf_name = cstring("printf");
+            let printf_name = CString::new("printf").unwrap();
             let printf = LLVMGetNamedFunction(base.module, printf_name.as_ptr());
 
-            let format = LLVMGetNamedGlobal(base.module, cstring(".builtin.format.num").as_ptr());
-            let format_ptr_name = cstring("format_ptr");
+            let format = LLVMGetNamedGlobal(
+                base.module,
+                CString::new(".builtin.format.num").unwrap().as_ptr(),
+            );
+            let format_ptr_name = CString::new("format_ptr").unwrap();
             let format_ptr = LLVMBuildBitCast(
                 base.builder,
                 format,

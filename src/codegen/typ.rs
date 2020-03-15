@@ -1,5 +1,6 @@
 use super::*;
 use llvm::core::*;
+use std::ffi::CString;
 
 pub fn void(context: LContext) -> LType {
     unsafe { LLVMVoidTypeInContext(context) }
