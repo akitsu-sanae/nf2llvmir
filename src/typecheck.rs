@@ -1,7 +1,5 @@
-use crate::{BinOp, Expr, Ident, Literal, Nf, Type};
+use crate::{BinOp, Error, Expr, Ident, Literal, Nf, Type};
 use std::collections::HashMap;
-
-type Error = String; // TODO
 
 type TypeEnv = HashMap<Ident, Type>;
 
