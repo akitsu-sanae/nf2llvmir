@@ -21,10 +21,22 @@ impl fmt::Display for Error {
                     args.join(", ")
                 }
             ),
-            ApplyNonFunc(_e, _ty) => unimplemented!(),
-            UnmatchIfBranches(_e, _ty1, _ty2) => unimplemented!(),
-            UnmatchIfCond(_e, _ty) => unimplemented!(),
-            InvalidBinOp(_op, _e1, _e2) => unimplemented!(),
+            ApplyNonFunc(e, ty) => write!(f, "{} must have function type, but have {}", e, ty),
+            UnmatchIfBranches(e, ty1, ty2) => write!(
+                f,
+                "in {}, branches have different type, {} vs {}",
+                e, ty1, ty2
+            ),
+            UnmatchIfCond(e, ty) => write!(
+                f,
+                "cond in if-expr, {}, must have bool type, but have {}",
+                e, ty
+            ),
+            InvalidBinOp(op, e1, e2) => write!(
+                f,
+                "invalid operation application, {} for {} and {}",
+                op, e1, e2
+            ),
         }
     }
 }
