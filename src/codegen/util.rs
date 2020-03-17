@@ -16,7 +16,7 @@ pub fn validate_module(module: LModule) -> Result<(), Error> {
     };
     if ok != 0 {
         let msg_str = unsafe { CString::from_raw(err_msg).into_string().unwrap() };
-        Err(msg_str)
+        Err(Error(msg_str))
     } else {
         Ok(())
     }

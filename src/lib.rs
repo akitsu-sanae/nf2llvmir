@@ -5,19 +5,19 @@ extern crate libc;
 extern crate llvm_sys as llvm;
 
 mod codegen;
+mod err_util;
+mod printer;
 mod typecheck;
 
-type Error = String; // TODO
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Error {
+    Typecheck(typecheck::Error),
+    Codegen(codegen::Error),
+    Others(String),
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Ident(String);
-
-use std::fmt;
-impl fmt::Display for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
 
 impl Ident {
     pub fn new(name: &str) -> Ident {
@@ -34,7 +34,8 @@ pub struct Nf {
 impl Nf {
     pub fn codegen<T: std::io::Write>(&self, name: &str, out: &mut T) -> Result<(), Error> {
         typecheck::check(self)?;
-        codegen::gen(out, self, name)
+        codegen::gen(out, self, name)?;
+        Ok(())
     }
 }
 

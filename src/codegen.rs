@@ -1,8 +1,12 @@
 mod base;
 mod build;
+mod err_util;
 mod lit;
 mod typ;
 mod util;
+
+#[cfg(test)]
+mod test;
 
 pub use self::base::*;
 pub use self::build::*;
@@ -10,9 +14,12 @@ pub use self::lit::*;
 pub use self::typ::*;
 pub use self::util::*;
 
-use crate::{BinOp, Error, Expr, Func, Ident, Literal, Nf, Type};
+use crate::{BinOp, Expr, Func, Ident, Literal, Nf, Type};
 use std::collections::HashMap;
 use std::io::Write;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Error(String);
 
 pub fn gen<T: Write>(out: &mut T, nf: &Nf, name: &str) -> Result<(), Error> {
     let mut base = Base::new(name);
@@ -100,7 +107,7 @@ fn apply_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
         Expr::Var(ref name) => env
             .get(name)
             .cloned()
-            .ok_or(format!("unbound variable: {}", name)),
+            .ok_or(Error(format!("unbound variable: {}", name))),
         Expr::Call(box ref func, ref args) => {
             let func = apply_expr(func, env, base)?;
             let args: Result<_, _> = args.iter().map(|arg| apply_expr(arg, env, base)).collect();
@@ -198,114 +205,4 @@ fn apply_type(ty: &Type, base: &Base) -> Result<LType, Error> {
             Ok(typ::func(&mut params, ret_ty))
         }
     }
-}
-
-#[cfg(test)]
-fn codegen_check(nf: &Nf, expected: &str) {
-    use std::io::BufWriter;
-    let mut buf = vec![];
-    {
-        let mut out = BufWriter::new(&mut buf);
-        assert_eq!(gen(&mut out, &nf, "output"), Ok(()));
-    }
-    let mut gen_code = std::str::from_utf8(&buf).unwrap().to_string();
-    gen_code.pop(); // remove eof
-    assert_eq!(gen_code.as_str().trim(), expected);
-}
-
-#[test]
-fn primitive_test() {
-    let nf = Nf {
-        funcs: vec![],
-        body: Expr::Const(Literal::Int(42)),
-    };
-    let expected = r#"
-; ModuleID = 'output'
-source_filename = "output"
-
-@.builtin.format.num = global [3 x i8] c"%d\0A"
-
-declare i32 @printf(i8*, ...)
-
-declare void @memcpy(i8*, i8*, ...)
-
-define i32 @main() {
-entry:
-  ret i32 42
-}
-"#;
-    codegen_check(&nf, expected.trim());
-}
-
-#[test]
-fn func_test() {
-    let nf = Nf {
-        funcs: vec![Func {
-            name: Ident::new("a"),
-            params: vec![],
-            ret_type: Type::Int,
-            body: Expr::Const(Literal::Int(42)),
-        }],
-        body: Expr::Call(box Expr::Var(Ident::new("a")), vec![]),
-    };
-    let expected = r#"
-; ModuleID = 'output'
-source_filename = "output"
-
-@.builtin.format.num = global [3 x i8] c"%d\0A"
-
-declare i32 @printf(i8*, ...)
-
-declare void @memcpy(i8*, i8*, ...)
-
-define i32 @a() {
-entry:
-  ret i32 42
-}
-
-define i32 @main() {
-entry:
-  %0 = call i32 @a()
-  ret i32 %0
-}
-"#;
-    codegen_check(&nf, expected.trim());
-}
-
-#[test]
-fn if_test() {
-    let nf = Nf {
-        funcs: vec![],
-        body: Expr::If(
-            box Expr::Const(Literal::Bool(true)),
-            box Expr::Const(Literal::Int(42)),
-            box Expr::Const(Literal::Int(32)),
-        ),
-    };
-    let expected = r#"
-; ModuleID = 'output'
-source_filename = "output"
-
-@.builtin.format.num = global [3 x i8] c"%d\0A"
-
-declare i32 @printf(i8*, ...)
-
-declare void @memcpy(i8*, i8*, ...)
-
-define i32 @main() {
-entry:
-  br i1 true, label %0, label %1
-
-0:                                                ; preds = %entry
-  br label %2
-
-1:                                                ; preds = %entry
-  br label %2
-
-2:                                                ; preds = %1, %0
-  %3 = phi i32 [ 42, %0 ], [ 32, %1 ]
-  ret i32 %3
-}
-"#;
-    codegen_check(&nf, expected.trim());
 }

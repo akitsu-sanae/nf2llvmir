@@ -1,7 +1,22 @@
-use crate::{BinOp, Error, Expr, Ident, Literal, Nf, Type};
+use crate::{BinOp, Expr, Ident, Literal, Nf, Type};
 use std::collections::HashMap;
 
+mod err_util;
+
+#[cfg(test)]
+mod test;
+
 type TypeEnv = HashMap<Ident, Type>;
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Error {
+    UnboundVariable(Ident),
+    UnmatchParamsAndArgs(Expr, Vec<Type>, Vec<Type>),
+    ApplyNonFunc(Expr, Type),
+    UnmatchIfBranches(Expr, Type, Type),
+    UnmatchIfCond(Expr, Type),
+    InvalidBinOp(BinOp, Expr, Expr),
+}
 
 pub fn check(nf: &Nf) -> Result<Type, Error> {
     let mut env = TypeEnv::new();
@@ -26,7 +41,7 @@ pub fn check(nf: &Nf) -> Result<Type, Error> {
 fn lookup(env: &TypeEnv, name: &Ident) -> Result<Type, Error> {
     match env.get(name) {
         Some(typ) => Ok(typ.clone()),
-        None => Err(format!("unbound variable: {}", name)),
+        None => Err(Error::UnboundVariable(name.clone())),
     }
 }
 
@@ -35,32 +50,35 @@ fn check_expr(e: &Expr, env: &TypeEnv) -> Result<Type, Error> {
         Expr::Const(lit) => Ok(check_literal(lit)),
         Expr::Var(name) => lookup(env, &name),
         Expr::Call(box ref e, ref args) => {
-            if let Type::Func(params, box ret_type) = check_expr(e, env)? {
+            let e_ty = check_expr(e, env)?;
+            if let Type::Func(params, box ret_type) = e_ty {
                 let args: Result<_, _> = args.iter().map(|arg| check_expr(arg, env)).collect();
                 let args: Vec<Type> = args?;
                 if params == args {
                     Ok(ret_type)
                 } else {
-                    Err(format!(
-                        "type of params {:?} and args {:?} must match", // TODO: not to use debug formatter
-                        params, args
-                    ))
+                    Err(Error::UnmatchParamsAndArgs(e.clone(), params, args))
                 }
             } else {
-                Err(format!("{:?} must have function type", e))
+                Err(Error::ApplyNonFunc(e.clone(), e_ty))
             }
         }
         Expr::If(box ref cond, box ref e1, box ref e2) => {
-            if check_expr(cond, env)? == Type::Bool {
+            let cond_ty = check_expr(cond, env)?;
+            if cond_ty == Type::Bool {
                 let ty1 = check_expr(e1, env)?;
                 let ty2 = check_expr(e2, env)?;
                 if ty1 == ty2 {
                     Ok(ty1)
                 } else {
-                    Err(format!("{:?} and {:?} must match", ty1, ty2))
+                    Err(Error::UnmatchIfBranches(
+                        Expr::If(box cond.clone(), box e1.clone(), box e2.clone()),
+                        ty1,
+                        ty2,
+                    ))
                 }
             } else {
-                Err(format!("{:?} must be boolean", cond))
+                Err(Error::UnmatchIfCond(cond.clone(), cond_ty))
             }
         }
         Expr::BinOp(ref op, box ref e1, box ref e2) => {
@@ -80,10 +98,7 @@ fn check_expr(e: &Expr, env: &TypeEnv) -> Result<Type, Error> {
                 | (BinOp::Gt, Type::Int, Type::Int)
                 | (BinOp::Leq, Type::Int, Type::Int)
                 | (BinOp::Geq, Type::Int, Type::Int) => Ok(Type::Bool),
-                _ => Err(format!(
-                    "cannot apply operator {:?} for {:?} and {:?}",
-                    op, e1, e2
-                )),
+                _ => Err(Error::InvalidBinOp(op.clone(), e1.clone(), e2.clone())),
             }
         }
         Expr::PrintNum(box ref e) => {
@@ -99,55 +114,4 @@ fn check_literal(lit: &Literal) -> Type {
         Literal::Char(_) => Type::Char,
         Literal::Int(_) => Type::Int,
     }
-}
-
-#[test]
-fn primitive_test() {
-    let nf = Nf {
-        funcs: vec![],
-        body: Expr::Const(Literal::Int(42)),
-    };
-    assert_eq!(check(&nf), Ok(Type::Int));
-
-    let nf = Nf {
-        funcs: vec![],
-        body: Expr::Const(Literal::Bool(true)),
-    };
-    assert_eq!(check(&nf), Ok(Type::Bool));
-
-    let nf = Nf {
-        funcs: vec![],
-        body: Expr::Const(Literal::Char('c')),
-    };
-    assert_eq!(check(&nf), Ok(Type::Char));
-}
-
-#[test]
-fn func_test() {
-    use crate::Func;
-    let nf = Nf {
-        funcs: vec![Func {
-            name: Ident::new("a"),
-            params: vec![],
-            ret_type: Type::Int,
-            body: Expr::Const(Literal::Int(42)),
-        }],
-        body: Expr::Var(Ident::new("a")),
-    };
-    assert_eq!(check(&nf), Ok(Type::Func(vec![], box Type::Int)));
-}
-
-#[test]
-fn apply_test() {
-    use crate::Func;
-    let nf = Nf {
-        funcs: vec![Func {
-            name: Ident::new("a"),
-            params: vec![],
-            ret_type: Type::Int,
-            body: Expr::Const(Literal::Int(42)),
-        }],
-        body: Expr::Call(box Expr::Var(Ident::new("a")), vec![]),
-    };
-    assert_eq!(check(&nf), Ok(Type::Int));
 }
