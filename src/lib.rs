@@ -9,7 +9,7 @@ mod err_util;
 mod printer;
 mod typecheck;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum Error {
     Typecheck(typecheck::Error),
     Codegen(codegen::Error),

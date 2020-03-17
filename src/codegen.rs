@@ -16,16 +16,20 @@ pub use self::util::*;
 
 use crate::{BinOp, Expr, Func, Ident, Literal, Nf, Type};
 use std::collections::HashMap;
-use std::io::Write;
+use std::io::{self, Write};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Error(String);
+#[derive(Debug)]
+pub enum Error {
+    Internal(String),
+    Validation(String),
+    Io(io::Error),
+}
 
 pub fn gen<T: Write>(out: &mut T, nf: &Nf, name: &str) -> Result<(), Error> {
     let mut base = Base::new(name);
     apply_nf(&mut base, nf)?;
     util::validate_module(base.module)?;
-    write!(out, "{}", util::print_module(base.module)?).unwrap(); // TODO
+    write!(out, "{}", util::print_module(base.module)?)?;
     Ok(())
 }
 
@@ -107,7 +111,7 @@ fn apply_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
         Expr::Var(ref name) => env
             .get(name)
             .cloned()
-            .ok_or(Error(format!("unbound variable: {}", name))),
+            .ok_or(Error::Internal(format!("unbound variable: {}", name))),
         Expr::Call(box ref func, ref args) => {
             let func = apply_expr(func, env, base)?;
             let args: Result<_, _> = args.iter().map(|arg| apply_expr(arg, env, base)).collect();
