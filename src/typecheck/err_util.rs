@@ -37,6 +37,17 @@ impl fmt::Display for Error {
                 "invalid operation application, {} for {} and {}",
                 op, e1, e2
             ),
+            IndexingForNonArray(e, ty) => write!(
+                f,
+                "indexed expr {} must have array type, but have {}",
+                e, ty
+            ),
+            IndexingWithNonInteger(e, ty) => write!(
+                f,
+                "indexing expr {} must have integer type, but have {}",
+                e, ty
+            ),
+            UnmatchArrayElem(e, ty) => write!(f, "elem {} in array must have {}", e, ty),
         }
     }
 }

@@ -120,15 +120,22 @@ fn apply_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
         }
         Expr::If(box ref cond, box ref e1, box ref e2) => apply_if_expr(cond, e1, e2, env, base),
         Expr::BinOp(op, box ref e1, box ref e2) => apply_binop_expr(op, e1, e2, env, base),
+        Expr::ArrayAt(box ref arr, box ref i) => apply_array_at(arr, i, env, base),
         Expr::PrintNum(box ref e) => apply_printnum_expr(e, env, base),
     }
 }
 
-fn apply_literal(lit: &Literal, _env: &Env, base: &Base) -> Result<LValue, Error> {
+fn apply_literal(lit: &Literal, env: &Env, base: &Base) -> Result<LValue, Error> {
     match lit {
         Literal::Bool(b) => Ok(lit::bool(*b, base.context)),
         Literal::Int(n) => Ok(lit::int32(*n, base.context)),
         Literal::Char(c) => Ok(lit::char(*c, base.context)),
+        Literal::Array(ref arr, ref elem_ty) => {
+            let elem_ty = apply_type(elem_ty, base)?;
+            let arr: Result<_, _> = arr.iter().map(|e| apply_expr(e, env, base)).collect();
+            let arr = arr?;
+            Ok(lit::array(arr, elem_ty, base.module))
+        }
     }
 }
 
@@ -191,6 +198,12 @@ fn apply_binop_expr(
     }
 }
 
+fn apply_array_at(arr: &Expr, idx: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
+    let arr = apply_expr(arr, env, base)?;
+    let idx = apply_expr(idx, env, base)?;
+    Ok(build::gep(arr, idx, base))
+}
+
 fn apply_printnum_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
     let e = apply_expr(e, env, base)?;
     Ok(build::builtin::print_num(e, base))
@@ -208,5 +221,6 @@ fn apply_type(ty: &Type, base: &Base) -> Result<LType, Error> {
             let ret_ty = apply_type(ret_ty, base)?;
             Ok(typ::func(&mut params, ret_ty))
         }
+        Type::Array(box ref elem_ty, ref len) => Ok(typ::array(apply_type(elem_ty, base)?, *len)),
     }
 }

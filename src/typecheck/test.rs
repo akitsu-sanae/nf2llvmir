@@ -51,3 +51,31 @@ fn apply_test() {
     };
     assert_eq!(check(&nf), Ok(Type::Int));
 }
+
+#[test]
+fn array_test() {
+    use crate::Func;
+    let nf = Nf {
+        funcs: vec![Func {
+            name: Ident::new("a"),
+            params: vec![(Ident::new("idx"), Type::Int)],
+            ret_type: Type::Int,
+            body: Expr::ArrayAt(
+                box Expr::Const(Literal::Array(
+                    vec![
+                        Expr::Const(Literal::Int(1)),
+                        Expr::Const(Literal::Int(2)),
+                        Expr::Const(Literal::Int(3)),
+                    ],
+                    box Type::Int,
+                )),
+                box Expr::Var(Ident::new("idx")),
+            ),
+        }],
+        body: Expr::Call(
+            box Expr::Var(Ident::new("a")),
+            vec![Expr::Const(Literal::Int(1))],
+        ),
+    };
+    assert_eq!(check(&nf), Ok(Type::Int));
+}

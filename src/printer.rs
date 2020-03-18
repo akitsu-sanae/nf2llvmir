@@ -32,6 +32,7 @@ impl fmt::Display for Expr {
                 write!(f, "if {} then {} else {}", cond, e1, e2)
             }
             BinOp(ref op, box ref e1, box ref e2) => write!(f, "({}) {} ({})", e1, op, e2),
+            ArrayAt(box ref arr, box ref idx) => write!(f, "{}[{}]", arr, idx),
             PrintNum(box ref e) => write!(f, "printnum {}", e),
         }
     }
@@ -44,6 +45,10 @@ impl fmt::Display for Literal {
             Bool(b) => write!(f, "{}", b),
             Char(c) => write!(f, "{}", c),
             Int(n) => write!(f, "{}", n),
+            Array(ref arr, _) => write!(f, "[{}]", {
+                let arr: Vec<_> = arr.iter().map(|e| e.to_string()).collect();
+                arr.join(", ")
+            }),
         }
     }
 }
@@ -86,6 +91,7 @@ impl fmt::Display for Type {
                 },
                 ret_ty
             ),
+            Type::Array(box ref elem_ty, ref len) => write!(f, "{}[{}]", elem_ty, len),
         }
     }
 }

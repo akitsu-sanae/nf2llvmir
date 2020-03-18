@@ -16,6 +16,9 @@ pub enum Error {
     UnmatchIfBranches(Expr, Type, Type),
     UnmatchIfCond(Expr, Type),
     InvalidBinOp(BinOp, Expr, Expr),
+    IndexingForNonArray(Expr, Type),
+    IndexingWithNonInteger(Expr, Type),
+    UnmatchArrayElem(Expr, Type),
 }
 
 pub fn check(nf: &Nf) -> Result<Type, Error> {
@@ -47,7 +50,7 @@ fn lookup(env: &TypeEnv, name: &Ident) -> Result<Type, Error> {
 
 fn check_expr(e: &Expr, env: &TypeEnv) -> Result<Type, Error> {
     match e {
-        Expr::Const(lit) => Ok(check_literal(lit)),
+        Expr::Const(lit) => check_literal(lit, env),
         Expr::Var(name) => lookup(env, &name),
         Expr::Call(box ref e, ref args) => {
             let e_ty = check_expr(e, env)?;
@@ -101,6 +104,19 @@ fn check_expr(e: &Expr, env: &TypeEnv) -> Result<Type, Error> {
                 _ => Err(Error::InvalidBinOp(op.clone(), e1.clone(), e2.clone())),
             }
         }
+        Expr::ArrayAt(box ref arr, box ref idx) => {
+            let arr_ty = check_expr(arr, env)?;
+            let idx_ty = check_expr(idx, env)?;
+            if idx_ty == Type::Int {
+                if let Type::Array(box elem_ty, _) = arr_ty {
+                    Ok(elem_ty)
+                } else {
+                    Err(Error::IndexingForNonArray(arr.clone(), arr_ty))
+                }
+            } else {
+                Err(Error::IndexingWithNonInteger(idx.clone(), idx_ty))
+            }
+        }
         Expr::PrintNum(box ref e) => {
             check_expr(e, env)?;
             Ok(Type::Void)
@@ -108,10 +124,19 @@ fn check_expr(e: &Expr, env: &TypeEnv) -> Result<Type, Error> {
     }
 }
 
-fn check_literal(lit: &Literal) -> Type {
+fn check_literal(lit: &Literal, env: &TypeEnv) -> Result<Type, Error> {
     match lit {
-        Literal::Bool(_) => Type::Bool,
-        Literal::Char(_) => Type::Char,
-        Literal::Int(_) => Type::Int,
+        Literal::Bool(_) => Ok(Type::Bool),
+        Literal::Char(_) => Ok(Type::Char),
+        Literal::Int(_) => Ok(Type::Int),
+        Literal::Array(elems, box ref ty) => {
+            for e in elems.iter() {
+                let given_ty = check_expr(e, env)?;
+                if ty != &given_ty {
+                    return Err(Error::UnmatchArrayElem(e.clone(), ty.clone()));
+                }
+            }
+            Ok(Type::Array(box ty.clone(), elems.len()))
+        }
     }
 }

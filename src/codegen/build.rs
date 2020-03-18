@@ -3,14 +3,6 @@ use llvm::core::*;
 use llvm::LLVMIntPredicate;
 use std::ffi::CString;
 
-pub fn declare_global(name: &CString, typ: LType, value: LValue, module: LModule) -> LValue {
-    unsafe {
-        let var = LLVMAddGlobal(module, typ, name.as_ptr());
-        LLVMSetInitializer(var, value);
-        var
-    }
-}
-
 pub fn declare(name: &str, typ: LType, init: LValue, builder: LBuilder) -> LValue {
     let name = CString::new(name).unwrap();
     unsafe {
@@ -92,19 +84,9 @@ pub fn store(var: LValue, expr: LValue, builder: LBuilder) -> LValue {
     unsafe { LLVMBuildStore(builder, expr, var) }
 }
 
-pub fn load(var: LValue, builder: LBuilder) -> LValue {
-    unsafe { LLVMBuildLoad(builder, var, b"\0".as_ptr() as *const _) }
-}
-
 pub fn ret(value: LValue, builder: LBuilder) {
     unsafe {
         LLVMBuildRet(builder, value);
-    }
-}
-
-pub fn ret_void(builder: LBuilder) {
-    unsafe {
-        LLVMBuildRetVoid(builder);
     }
 }
 
