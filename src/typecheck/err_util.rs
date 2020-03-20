@@ -48,6 +48,8 @@ impl fmt::Display for Error {
                 e, ty
             ),
             UnmatchArrayElem(e, ty) => write!(f, "elem {} in array must have {}", e, ty),
+            InvalidField(e, label) => write!(f, "expr {} does not have field named {}", e, label),
+            FieldOfNonStruct(e) => write!(f, "{} is not struct expr", e),
         }
     }
 }

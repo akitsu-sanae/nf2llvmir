@@ -19,6 +19,8 @@ pub enum Error {
     IndexingForNonArray(Expr, Type),
     IndexingWithNonInteger(Expr, Type),
     UnmatchArrayElem(Expr, Type),
+    InvalidField(Expr, Ident),
+    FieldOfNonStruct(Expr),
 }
 
 pub fn check(nf: &Nf) -> Result<Type, Error> {
@@ -117,6 +119,17 @@ fn check_expr(e: &Expr, env: &TypeEnv) -> Result<Type, Error> {
                 Err(Error::IndexingWithNonInteger(idx.clone(), idx_ty))
             }
         }
+        Expr::StructAt(box ref e, ref label) => {
+            if let Type::Struct(fields) = check_expr(e, env)? {
+                if let Some((_, ty)) = fields.into_iter().find(|field| &field.0 == label) {
+                    Ok(ty)
+                } else {
+                    Err(Error::InvalidField(e.clone(), label.clone()))
+                }
+            } else {
+                Err(Error::FieldOfNonStruct(e.clone()))
+            }
+        }
         Expr::PrintNum(box ref e) => {
             check_expr(e, env)?;
             Ok(Type::Void)
@@ -137,6 +150,17 @@ fn check_literal(lit: &Literal, env: &TypeEnv) -> Result<Type, Error> {
                 }
             }
             Ok(Type::Array(box ty.clone(), elems.len()))
+        }
+        Literal::Struct(ref fields) => {
+            let fields: Result<Vec<(Ident, Type)>, _> = fields
+                .iter()
+                .map(|(label, e)| -> Result<(Ident, Type), Error> {
+                    let ty = check_expr(e, env)?;
+                    Ok((label.clone(), ty))
+                })
+                .collect();
+            let fields = fields?;
+            Ok(Type::Struct(fields))
         }
     }
 }

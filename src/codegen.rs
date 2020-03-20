@@ -122,6 +122,7 @@ fn apply_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
         Expr::BinOp(op, box ref e1, box ref e2) => apply_binop_expr(op, e1, e2, env, base),
         Expr::ArrayAt(box ref arr, box ref i) => apply_array_at(arr, i, env, base),
         Expr::PrintNum(box ref e) => apply_printnum_expr(e, env, base),
+        _ => unimplemented!(),
     }
 }
 
@@ -136,6 +137,7 @@ fn apply_literal(lit: &Literal, env: &Env, base: &Base) -> Result<LValue, Error>
             let arr = arr?;
             Ok(lit::array(arr, elem_ty, base.module))
         }
+        _ => unimplemented!(),
     }
 }
 
@@ -222,5 +224,6 @@ fn apply_type(ty: &Type, base: &Base) -> Result<LType, Error> {
             Ok(typ::func(&mut params, ret_ty))
         }
         Type::Array(box ref elem_ty, ref len) => Ok(typ::array(apply_type(elem_ty, base)?, *len)),
+        _ => unimplemented!(),
     }
 }

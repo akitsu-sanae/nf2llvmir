@@ -114,24 +114,21 @@ entry:
 fn array_test() {
     let nf = Nf {
         funcs: vec![Func {
-            name: Ident::new("a"),
-            params: vec![(Ident::new("idx"), Type::Int)],
-            ret_type: Type::Int,
-            body: Expr::ArrayAt(
-                box Expr::Const(Literal::Array(
-                    vec![
-                        Expr::Const(Literal::Int(1)),
-                        Expr::Const(Literal::Int(2)),
-                        Expr::Const(Literal::Int(3)),
-                    ],
-                    box Type::Int,
-                )),
-                box Expr::Var(Ident::new("idx")),
-            ),
+            name: Ident::new("arr"),
+            params: vec![],
+            ret_type: Type::Array(box Type::Int, 2),
+            body: Expr::Const(Literal::Array(
+                vec![
+                    Expr::Const(Literal::Int(1)),
+                    Expr::Const(Literal::Int(2)),
+                    Expr::Const(Literal::Int(3)),
+                ],
+                box Type::Int,
+            )),
         }],
-        body: Expr::Call(
-            box Expr::Var(Ident::new("a")),
-            vec![Expr::Const(Literal::Int(1))],
+        body: Expr::ArrayAt(
+            box Expr::Call(box Expr::Var(Ident::new("arr")), vec![]),
+            box Expr::Const(Literal::Int(1)),
         ),
     };
 

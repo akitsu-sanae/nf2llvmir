@@ -55,8 +55,8 @@ pub enum Expr {
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
     ArrayAt(Box<Expr>, Box<Expr>),
+    StructAt(Box<Expr>, Ident),
     PrintNum(Box<Expr>),
-    // TODO: access to elements of struct
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,7 +65,7 @@ pub enum Literal {
     Char(char),
     Int(i32),
     Array(Vec<Expr>, Box<Type>),
-    // TODO: add struct
+    Struct(Vec<(Ident, Expr)>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -90,5 +90,5 @@ pub enum Type {
     Int,
     Func(Vec<Type>, Box<Type>),
     Array(Box<Type>, usize),
-    // TODO: add type of array and struct
+    Struct(Vec<(Ident, Type)>),
 }
