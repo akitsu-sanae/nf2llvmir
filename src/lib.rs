@@ -17,7 +17,7 @@ pub enum Error {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Ident(String);
+pub struct Ident(pub String);
 
 impl Ident {
     pub fn new(name: &str) -> Ident {
@@ -27,8 +27,8 @@ impl Ident {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Nf {
-    funcs: Vec<Func>,
-    body: Expr,
+    pub funcs: Vec<Func>,
+    pub body: Expr,
 }
 
 impl Nf {
