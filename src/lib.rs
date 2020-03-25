@@ -57,6 +57,7 @@ pub enum Expr {
     ArrayAt(Box<Expr>, Box<Expr>),
     StructAt(Box<Expr>, Ident),
     PrintNum(Box<Expr>),
+    Then(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

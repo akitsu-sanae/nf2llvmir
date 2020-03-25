@@ -35,6 +35,7 @@ impl fmt::Display for Expr {
             ArrayAt(box ref arr, box ref idx) => write!(f, "{}[{}]", arr, idx),
             StructAt(box ref e, ref label) => write!(f, "{}.{}", e, label),
             PrintNum(box ref e) => write!(f, "printnum {}", e),
+            Then(box ref e1, box ref e2) => write!(f, "{}; {}", e1, e2),
         }
     }
 }

@@ -122,6 +122,10 @@ fn apply_expr(e: &Expr, env: &Env, base: &Base) -> Result<LValue, Error> {
         Expr::BinOp(op, box ref e1, box ref e2) => apply_binop_expr(op, e1, e2, env, base),
         Expr::ArrayAt(box ref arr, box ref i) => apply_array_at(arr, i, env, base),
         Expr::PrintNum(box ref e) => apply_printnum_expr(e, env, base),
+        Expr::Then(box ref e1, box ref e2) => {
+            apply_expr(e1, env, base)?;
+            apply_expr(e2, env, base)
+        }
         _ => unimplemented!(),
     }
 }

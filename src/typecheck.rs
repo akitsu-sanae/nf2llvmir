@@ -134,6 +134,10 @@ fn check_expr(e: &Expr, env: &TypeEnv) -> Result<Type, Error> {
             check_expr(e, env)?;
             Ok(Type::Void)
         }
+        Expr::Then(box ref e1, box ref e2) => {
+            check_expr(e1, env)?;
+            check_expr(e2, env)
+        }
     }
 }
 
