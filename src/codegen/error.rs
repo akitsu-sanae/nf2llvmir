@@ -1,7 +1,13 @@
-use super::Error;
-
 use std::error;
 use std::fmt;
+use std::io;
+
+#[derive(Debug)]
+pub enum Error {
+    Internal(String),
+    Validation(String),
+    Io(io::Error),
+}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

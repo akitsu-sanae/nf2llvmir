@@ -1,29 +1,16 @@
 use crate::*;
 use std::fmt;
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use Error::*;
-        match self {
-            Typecheck(err) => write!(f, "{}", err),
-            Codegen(err) => write!(f, "{}", err),
-            Others(msg) => write!(f, "{}", msg),
-        }
-    }
-}
-
-impl fmt::Display for Ident {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Expr::*;
         match self {
             Const(ref lit) => write!(f, "{}", lit),
+            Let(ref name, ref typ, box ref e1, box ref e2) => {
+                write!(f, "let {}: {} = {}; {}", name, typ, e1, e2)
+            }
             Var(ref name) => write!(f, "{}", name),
+            Load(ref e) => write!(f, "load ({})", e),
             Call(box ref func, ref args) => write!(f, "{}({})", func, {
                 let args: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
                 args.join(", ")
@@ -35,7 +22,6 @@ impl fmt::Display for Expr {
             ArrayAt(box ref arr, box ref idx) => write!(f, "{}[{}]", arr, idx),
             StructAt(box ref e, ref label) => write!(f, "{}.{}", e, label),
             PrintNum(box ref e) => write!(f, "printnum {}", e),
-            Then(box ref e1, box ref e2) => write!(f, "{}; {}", e1, e2),
         }
     }
 }
@@ -101,6 +87,7 @@ impl fmt::Display for Type {
                 ret_ty
             ),
             Type::Array(box ref elem_ty, ref len) => write!(f, "{}[{}]", elem_ty, len),
+            Type::Pointer(box ref typ) => write!(f, "pointer[{}]", typ),
             Type::Struct(ref fields) => write!(f, "{{ {} }}", {
                 let fields: Vec<_> = fields
                     .iter()

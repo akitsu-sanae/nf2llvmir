@@ -2,11 +2,29 @@ use super::*;
 use std::error;
 use std::fmt;
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Error {
+    UnboundVariable(Ident),
+    UnmatchLet(Expr, Type),
+    UnmatchParamsAndArgs(Expr, Vec<Type>, Vec<Type>),
+    ApplyNonFunc(Expr, Type),
+    UnmatchIfBranches(Expr, Type, Type),
+    UnmatchIfCond(Expr, Type),
+    DereferenceNonpointer(Expr),
+    InvalidBinOp(BinOp, Expr, Expr),
+    IndexingForNonArray(Expr, Type),
+    IndexingWithNonInteger(Expr, Type),
+    UnmatchArrayElem(Expr, Type),
+    InvalidField(Expr, Ident),
+    FieldOfNonStruct(Expr),
+}
+
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use Error::*;
         match self {
             UnboundVariable(name) => write!(f, "unbound variable: {}", name),
+            UnmatchLet(e, typ) => write!(f, "{} is expected to have type {}", e, typ),
             UnmatchParamsAndArgs(e, params, args) => write!(
                 f,
                 "in {}, params are expected in {}, but given in {}",
@@ -31,6 +49,11 @@ impl fmt::Display for Error {
                 f,
                 "cond in if-expr, {}, must have bool type, but have {}",
                 e, ty
+            ),
+            DereferenceNonpointer(e) => write!(
+                f,
+                "dereferenced expression, `{}`, does not have pointer type",
+                e
             ),
             InvalidBinOp(op, e1, e2) => write!(
                 f,

@@ -84,6 +84,10 @@ pub fn store(var: LValue, expr: LValue, builder: LBuilder) -> LValue {
     unsafe { LLVMBuildStore(builder, expr, var) }
 }
 
+pub fn load(var: LValue, builder: LBuilder) -> LValue {
+    unsafe { LLVMBuildLoad(builder, var, b"\0".as_ptr() as *const _) }
+}
+
 pub fn ret(value: LValue, builder: LBuilder) {
     unsafe {
         LLVMBuildRet(builder, value);

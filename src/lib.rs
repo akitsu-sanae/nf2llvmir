@@ -5,25 +5,14 @@ extern crate libc;
 extern crate llvm_sys as llvm;
 
 mod codegen;
-mod err_util;
+pub mod env;
+pub mod error;
+mod ident;
 mod printer;
 mod typecheck;
 
-#[derive(Debug)]
-pub enum Error {
-    Typecheck(typecheck::Error),
-    Codegen(codegen::Error),
-    Others(String),
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Ident(pub String);
-
-impl Ident {
-    pub fn new(name: &str) -> Ident {
-        Ident(name.to_string())
-    }
-}
+use error::Error;
+use ident::Ident;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Nf {
@@ -50,14 +39,15 @@ pub struct Func {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expr {
     Const(Literal),
+    Let(Ident, Type, Box<Expr>, Box<Expr>),
     Var(Ident),
+    Load(Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
     ArrayAt(Box<Expr>, Box<Expr>),
     StructAt(Box<Expr>, Ident),
     PrintNum(Box<Expr>),
-    Then(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -91,5 +81,6 @@ pub enum Type {
     Int,
     Func(Vec<Type>, Box<Type>),
     Array(Box<Type>, usize),
+    Pointer(Box<Type>),
     Struct(Vec<(Ident, Type)>),
 }

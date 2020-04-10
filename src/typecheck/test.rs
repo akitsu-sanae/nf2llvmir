@@ -34,7 +34,10 @@ fn func_test() {
         }],
         body: Expr::Var(Ident::new("a")),
     };
-    assert_eq!(check(&nf), Ok(Type::Func(vec![], box Type::Int)));
+    assert_eq!(
+        check(&nf),
+        Ok(Type::Pointer(box Type::Func(vec![], box Type::Int)))
+    );
 }
 
 #[test]
@@ -69,7 +72,7 @@ fn array_test() {
                     ],
                     box Type::Int,
                 )),
-                box Expr::Var(Ident::new("idx")),
+                box Expr::Load(box Expr::Var(Ident::new("idx"))),
             ),
         }],
         body: Expr::Call(
