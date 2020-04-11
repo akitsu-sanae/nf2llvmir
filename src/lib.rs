@@ -9,6 +9,7 @@ pub mod env;
 pub mod error;
 pub mod ident;
 mod printer;
+mod subst;
 mod typecheck;
 
 use error::Error;
