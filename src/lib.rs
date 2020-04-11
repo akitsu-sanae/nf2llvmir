@@ -7,7 +7,7 @@ extern crate llvm_sys as llvm;
 mod codegen;
 pub mod env;
 pub mod error;
-mod ident;
+pub mod ident;
 mod printer;
 mod typecheck;
 
