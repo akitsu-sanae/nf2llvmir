@@ -1,6 +1,13 @@
 use crate::*;
 use ident::Ident;
 
+impl Func {
+    pub fn subst_expr(mut self: Func, name: &Ident, e: &Expr) -> Func {
+        self.body = self.body.subst_expr(name, e);
+        self
+    }
+}
+
 impl Expr {
     pub fn subst_expr(self: Expr, name: &Ident, e: &Expr) -> Expr {
         match self {
