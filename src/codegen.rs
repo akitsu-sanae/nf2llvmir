@@ -112,7 +112,11 @@ fn apply_expr(e: &Expr, env: &Env<LValue>, base: &Base) -> Result<LValue, Error>
                 };
                 let l_typ = apply_type(&typ, base)?;
                 let l_e1 = apply_expr(e1, env, base)?;
-                let var = build::declare(&name.0, l_typ, l_e1, base.builder);
+                let var = match &typ {
+                    Type::Array(_, _) => build::declare_array(&name.0, l_typ, l_e1, base),
+                    Type::Struct(_) => todo!(),
+                    _ => build::declare(&name.0, l_typ, l_e1, base.builder),
+                };
                 let mut env = env.clone();
                 env = env.add(name.clone(), var);
                 apply_expr(e2, &env, base)

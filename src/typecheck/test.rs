@@ -70,7 +70,7 @@ fn array_test() {
                         Expr::Const(Literal::Int(2)),
                         Expr::Const(Literal::Int(3)),
                     ],
-                    box Type::Int,
+                    Type::Int,
                 )),
                 box Expr::Load(box Expr::Var(Ident::new("idx"))),
             ),

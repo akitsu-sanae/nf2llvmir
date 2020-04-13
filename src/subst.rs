@@ -14,9 +14,9 @@ impl Expr {
             Expr::Const(Literal::Bool(_))
             | Expr::Const(Literal::Char(_))
             | Expr::Const(Literal::Int(_)) => self,
-            Expr::Const(Literal::Array(es, box typ)) => Expr::Const(Literal::Array(
+            Expr::Const(Literal::Array(es, typ)) => Expr::Const(Literal::Array(
                 es.into_iter().map(|e_| e_.subst_expr(name, e)).collect(),
-                box typ,
+                typ,
             )),
             Expr::Const(Literal::Struct(fields)) => Expr::Const(Literal::Struct(
                 fields

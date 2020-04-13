@@ -138,7 +138,7 @@ fn check_literal(lit: &Literal, env: &Env<Type>) -> Result<Type, Error> {
         Literal::Bool(_) => Ok(Type::Bool),
         Literal::Char(_) => Ok(Type::Char),
         Literal::Int(_) => Ok(Type::Int),
-        Literal::Array(elems, box ref ty) => {
+        Literal::Array(elems, ref ty) => {
             for e in elems.iter() {
                 let given_ty = check_expr(e, env)?;
                 if ty != &given_ty {

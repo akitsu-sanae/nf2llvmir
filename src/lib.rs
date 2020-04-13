@@ -56,7 +56,7 @@ pub enum Literal {
     Bool(bool),
     Char(char),
     Int(i32),
-    Array(Vec<Expr>, Box<Type>),
+    Array(Vec<Expr>, Type),
     Struct(Vec<(Ident, Expr)>),
 }
 

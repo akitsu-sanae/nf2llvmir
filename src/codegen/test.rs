@@ -162,3 +162,48 @@ entry:
 "#;
     codegen_check(&nf, expected.trim());
 }
+
+#[test]
+fn array_test() {
+    let nf = Nf {
+        funcs: vec![],
+        body: Expr::Let(
+            Ident::new("arr"),
+            Type::Array(box Type::Int, 2),
+            box Expr::Const(Literal::Array(
+                vec![
+                    Expr::Const(Literal::Int(114)),
+                    Expr::Const(Literal::Int(514)),
+                ],
+                Type::Int,
+            )),
+            box Expr::PrintNum(box Expr::Load(box Expr::ArrayAt(
+                box Expr::Var(Ident::new("arr")),
+                box Expr::Const(Literal::Int(0)),
+            ))),
+        ),
+    };
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+@0 = constant [2 x i32] [i32 114, i32 514]
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @main() {
+entry:
+  %arr = alloca [2 x i32]
+  %0 = bitcast [2 x i32]* %arr to i8*
+  call void (i8*, i8*, ...) @memcpy(i8* %0, i8* bitcast ([2 x i32]* @0 to i8*), i64 mul nuw (i64 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i64), i64 2))
+  %1 = getelementptr [2 x i32], [2 x i32]* %arr, i32 0, i32 0
+  %2 = load i32, i32* %1
+  %3 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.builtin.format.num, i32 0, i32 0), i32 %2)
+  ret i32 %3
+}
+"#;
+    codegen_check(&nf, expected.trim());
+}
