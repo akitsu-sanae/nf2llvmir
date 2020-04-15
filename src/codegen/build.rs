@@ -46,7 +46,7 @@ pub fn declare_array(name: &str, typ: LType, init: LValue, base: &Base) -> LValu
     }
 }
 
-pub fn declare_struct(name: &str, typ: LType, init: LValue, base: &Base) -> LValue {
+pub fn declare_tuple(name: &str, typ: LType, init: LValue, base: &Base) -> LValue {
     let name = CString::new(name).unwrap();
     let memcpy_name = CString::new("memcpy").unwrap();
     unsafe {

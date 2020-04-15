@@ -15,8 +15,8 @@ pub enum Error {
     IndexingForNonArray(Expr, Type),
     IndexingWithNonInteger(Expr, Type),
     UnmatchArrayElem(Expr, Type),
-    InvalidField(Expr, Ident),
-    FieldOfNonStruct(Expr),
+    InvalidTupleAccess(Expr, usize),
+    IndexingForNonTuple(Expr),
 }
 
 impl fmt::Display for Error {
@@ -71,8 +71,8 @@ impl fmt::Display for Error {
                 e, ty
             ),
             UnmatchArrayElem(e, ty) => write!(f, "elem {} in array must have {}", e, ty),
-            InvalidField(e, label) => write!(f, "expr {} does not have field named {}", e, label),
-            FieldOfNonStruct(e) => write!(f, "{} is not struct expr", e),
+            InvalidTupleAccess(e, idx) => write!(f, "invalid access of expr {}, with {}", e, idx),
+            IndexingForNonTuple(e) => write!(f, "{} is not struct expr", e),
         }
     }
 }

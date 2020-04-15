@@ -114,11 +114,10 @@ fn apply_expr(e: &Expr, env: &Env<LValue>, base: &Base) -> Result<LValue, Error>
                 let l_e1 = apply_expr(e1, env, base)?;
                 let var = match &typ {
                     Type::Array(_, _) => build::declare_array(&name.0, l_typ, l_e1, base),
-                    Type::Struct(_) => todo!(),
+                    Type::Tuple(_) => build::declare_tuple(&name.0, l_typ, l_e1, base),
                     _ => build::declare(&name.0, l_typ, l_e1, base.builder),
                 };
-                let mut env = env.clone();
-                env = env.add(name.clone(), var);
+                let env = env.add(name.clone(), var);
                 apply_expr(e2, &env, base)
             }
         }
@@ -138,7 +137,7 @@ fn apply_expr(e: &Expr, env: &Env<LValue>, base: &Base) -> Result<LValue, Error>
         Expr::If(box ref cond, box ref e1, box ref e2) => apply_if_expr(cond, e1, e2, env, base),
         Expr::BinOp(op, box ref e1, box ref e2) => apply_binop_expr(op, e1, e2, env, base),
         Expr::ArrayAt(box ref arr, box ref i) => apply_array_at(arr, i, env, base),
-        Expr::StructAt(_, _) => todo!(),
+        Expr::TupleAt(box ref e, ref idx) => apply_tuple_at(e, *idx, env, base),
         Expr::PrintNum(box ref e) => apply_printnum_expr(e, env, base),
     }
 }
@@ -154,7 +153,11 @@ fn apply_literal(lit: &Literal, env: &Env<LValue>, base: &Base) -> Result<LValue
             let arr = arr?;
             Ok(lit::array(arr, elem_ty, base.module))
         }
-        Literal::Struct(_) => todo!(),
+        Literal::Tuple(ref elems) => {
+            let elems: Result<_, _> = elems.iter().map(|e| apply_expr(e, env, base)).collect();
+            let elems = elems?;
+            Ok(lit::tuple(elems, base.module))
+        }
     }
 }
 
@@ -223,6 +226,12 @@ fn apply_array_at(arr: &Expr, idx: &Expr, env: &Env<LValue>, base: &Base) -> Res
     Ok(build::gep(arr, idx, base))
 }
 
+fn apply_tuple_at(e: &Expr, idx: usize, env: &Env<LValue>, base: &Base) -> Result<LValue, Error> {
+    let e = apply_expr(e, env, base)?;
+    let idx = lit::int32(idx as i32, base.context);
+    Ok(build::gep(e, idx, base))
+}
+
 fn apply_printnum_expr(e: &Expr, env: &Env<LValue>, base: &Base) -> Result<LValue, Error> {
     let e = apply_expr(e, env, base)?;
     Ok(build::builtin::print_num(e, base))
@@ -242,6 +251,10 @@ fn apply_type(ty: &Type, base: &Base) -> Result<LType, Error> {
         }
         Type::Array(box ref elem_ty, ref len) => Ok(typ::array(apply_type(elem_ty, base)?, *len)),
         Type::Pointer(box ref ty) => Ok(typ::ptr(apply_type(ty, base)?)),
-        Type::Struct(_) => todo!(),
+        Type::Tuple(ref elems) => {
+            let elems: Result<_, _> = elems.iter().map(|ty| apply_type(ty, base)).collect();
+            let elems = elems?;
+            Ok(typ::tuple(elems))
+        }
     }
 }

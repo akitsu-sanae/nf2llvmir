@@ -47,7 +47,7 @@ pub enum Expr {
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),
     ArrayAt(Box<Expr>, Box<Expr>),
-    StructAt(Box<Expr>, Ident),
+    TupleAt(Box<Expr>, usize),
     PrintNum(Box<Expr>),
 }
 
@@ -57,7 +57,7 @@ pub enum Literal {
     Char(char),
     Int(i32),
     Array(Vec<Expr>, Type),
-    Struct(Vec<(Ident, Expr)>),
+    Tuple(Vec<Expr>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -74,7 +74,7 @@ pub enum BinOp {
     Geq,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Type {
     Void,
     Bool,
@@ -83,5 +83,5 @@ pub enum Type {
     Func(Vec<Type>, Box<Type>),
     Array(Box<Type>, usize),
     Pointer(Box<Type>),
-    Struct(Vec<(Ident, Type)>),
+    Tuple(Vec<Type>),
 }

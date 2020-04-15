@@ -115,15 +115,15 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
                 Err(Error::IndexingWithNonInteger(idx.clone(), idx_ty))
             }
         }
-        Expr::StructAt(box ref e, ref label) => {
-            if let Type::Struct(fields) = check_expr(e, env)? {
-                if let Some((_, ty)) = fields.into_iter().find(|field| &field.0 == label) {
+        Expr::TupleAt(box ref e, ref idx) => {
+            if let Type::Tuple(elems) = check_expr(e, env)? {
+                if let Some(ty) = elems.into_iter().nth(*idx) {
                     Ok(ty)
                 } else {
-                    Err(Error::InvalidField(e.clone(), label.clone()))
+                    Err(Error::InvalidTupleAccess(e.clone(), *idx))
                 }
             } else {
-                Err(Error::FieldOfNonStruct(e.clone()))
+                Err(Error::IndexingForNonTuple(e.clone()))
             }
         }
         Expr::PrintNum(box ref e) => {
@@ -147,16 +147,9 @@ fn check_literal(lit: &Literal, env: &Env<Type>) -> Result<Type, Error> {
             }
             Ok(Type::Array(box ty.clone(), elems.len()))
         }
-        Literal::Struct(ref fields) => {
-            let fields: Result<Vec<(Ident, Type)>, _> = fields
-                .iter()
-                .map(|(label, e)| -> Result<(Ident, Type), Error> {
-                    let ty = check_expr(e, env)?;
-                    Ok((label.clone(), ty))
-                })
-                .collect();
-            let fields = fields?;
-            Ok(Type::Struct(fields))
+        Literal::Tuple(ref elems) => {
+            let elems: Result<Vec<Type>, _> = elems.iter().map(|e| check_expr(e, env)).collect();
+            Ok(Type::Tuple(elems?))
         }
     }
 }

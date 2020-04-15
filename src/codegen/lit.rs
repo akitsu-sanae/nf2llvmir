@@ -25,10 +25,6 @@ pub fn int32(n: i32, context: LContext) -> LValue {
     unsafe { LLVMConstInt(typ::int32(context), n as u64, 0) }
 }
 
-pub fn func(name: CString, module: LModule) -> LValue {
-    unsafe { LLVMGetNamedFunction(module, name.as_ptr()) }
-}
-
 pub fn array(mut elems: Vec<LValue>, typ: LType, module: LModule) -> LValue {
     let arr_type = typ::array(typ, elems.len());
     unsafe {
@@ -40,9 +36,10 @@ pub fn array(mut elems: Vec<LValue>, typ: LType, module: LModule) -> LValue {
     }
 }
 
-pub fn struct_(mut fields: Vec<LValue>, typ: LType, module: LModule) -> LValue {
+pub fn tuple(mut fields: Vec<LValue>, module: LModule) -> LValue {
     unsafe {
-        let value = LLVMConstNamedStruct(typ, fields.as_mut_ptr(), fields.len() as libc::c_uint);
+        let value = LLVMConstStruct(fields.as_mut_ptr(), fields.len() as libc::c_uint, 0); // packed
+        let typ = type_of(value);
         let global_var = LLVMAddGlobal(module, typ, b"\0".as_ptr() as *const _);
         LLVMSetInitializer(global_var, value);
         LLVMSetGlobalConstant(global_var, 1);

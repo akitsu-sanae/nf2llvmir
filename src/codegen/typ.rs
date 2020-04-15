@@ -1,6 +1,5 @@
 use super::*;
 use llvm::core::*;
-use std::ffi::CString;
 
 pub fn void(context: LContext) -> LType {
     unsafe { LLVMVoidTypeInContext(context) }
@@ -35,17 +34,8 @@ pub fn array(typ: LType, len: usize) -> LType {
     unsafe { LLVMArrayType(typ, len as u32) }
 }
 
-pub fn struct_(name: &CString, fields: &mut Vec<LType>, context: LContext) -> LType {
-    unsafe {
-        let struct_ty = LLVMStructCreateNamed(context, name.as_ptr());
-        LLVMStructSetBody(
-            struct_ty,
-            fields.as_mut_ptr(),
-            fields.len() as libc::c_uint,
-            0,
-        );
-        struct_ty
-    }
+pub fn tuple(mut elems: Vec<LType>) -> LType {
+    unsafe { LLVMStructType(elems.as_mut_ptr(), elems.len() as libc::c_uint, 0) }
 }
 
 pub fn type_of(v: LValue) -> LType {

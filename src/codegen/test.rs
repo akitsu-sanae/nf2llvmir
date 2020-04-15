@@ -207,3 +207,43 @@ entry:
 "#;
     codegen_check(&nf, expected.trim());
 }
+
+#[test]
+fn tuple_test() {
+    // let a = (114, 514); a.0
+    let nf = Nf {
+        funcs: vec![],
+        body: Expr::Let(
+            Ident::new("a"),
+            Type::Tuple(vec![Type::Int, Type::Int]),
+            box Expr::Const(Literal::Tuple(vec![
+                Expr::Const(Literal::Int(114)),
+                Expr::Const(Literal::Int(514)),
+            ])),
+            box Expr::Load(box Expr::TupleAt(box Expr::Var(Ident::new("a")), 1)),
+        ),
+    };
+
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+@0 = constant { i32, i32 } { i32 114, i32 514 }
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @main() {
+entry:
+  %a = alloca { i32, i32 }
+  %0 = bitcast { i32, i32 }* %a to i8*
+  call void (i8*, i8*, ...) @memcpy(i8* %0, i8* bitcast ({ i32, i32 }* @0 to i8*), i64 mul nuw (i64 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i64), i64 2))
+  %1 = getelementptr { i32, i32 }, { i32, i32 }* %a, i32 0, i32 1
+  %2 = load i32, i32* %1
+  ret i32 %2
+}
+"#;
+    codegen_check(&nf, expected.trim());
+}

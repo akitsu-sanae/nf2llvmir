@@ -18,11 +18,8 @@ impl Expr {
                 es.into_iter().map(|e_| e_.subst_expr(name, e)).collect(),
                 typ,
             )),
-            Expr::Const(Literal::Struct(fields)) => Expr::Const(Literal::Struct(
-                fields
-                    .into_iter()
-                    .map(|(label, e_)| (label, e_.subst_expr(name, e)))
-                    .collect(),
+            Expr::Const(Literal::Tuple(elems)) => Expr::Const(Literal::Tuple(
+                elems.into_iter().map(|e_| e_.subst_expr(name, e)).collect(),
             )),
             Expr::Let(ref name_, _, _, _) if name_ == name => self,
             Expr::Let(name_, typ, box e1, box e2) => Expr::Let(
@@ -49,7 +46,7 @@ impl Expr {
             Expr::ArrayAt(box arr, box idx) => {
                 Expr::ArrayAt(box arr.subst_expr(name, e), box idx.subst_expr(name, e))
             }
-            Expr::StructAt(box e_, label) => Expr::StructAt(box e_.subst_expr(name, e), label),
+            Expr::TupleAt(box e_, label) => Expr::TupleAt(box e_.subst_expr(name, e), label),
             Expr::PrintNum(box e_) => Expr::PrintNum(box e_.subst_expr(name, e)),
         }
     }

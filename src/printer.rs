@@ -20,7 +20,7 @@ impl fmt::Display for Expr {
             }
             BinOp(ref op, box ref e1, box ref e2) => write!(f, "({}) {} ({})", e1, op, e2),
             ArrayAt(box ref arr, box ref idx) => write!(f, "{}[{}]", arr, idx),
-            StructAt(box ref e, ref label) => write!(f, "{}.{}", e, label),
+            TupleAt(box ref e, ref idx) => write!(f, "({}).{}", e, idx),
             PrintNum(box ref e) => write!(f, "printnum {}", e),
         }
     }
@@ -37,12 +37,9 @@ impl fmt::Display for Literal {
                 let arr: Vec<_> = arr.iter().map(|e| e.to_string()).collect();
                 arr.join(", ")
             }),
-            Struct(ref fields) => write!(f, "{{ {}  }}", {
-                let fields: Vec<_> = fields
-                    .iter()
-                    .map(|(label, e)| format!("{}: {}", label, e))
-                    .collect();
-                fields.join(", ")
+            Tuple(ref elems) => write!(f, "{{ {}  }}", {
+                let elems: Vec<_> = elems.iter().map(|e| e.to_string()).collect();
+                elems.join(", ")
             }),
         }
     }
@@ -88,12 +85,9 @@ impl fmt::Display for Type {
             ),
             Type::Array(box ref elem_ty, ref len) => write!(f, "{}[{}]", elem_ty, len),
             Type::Pointer(box ref typ) => write!(f, "pointer[{}]", typ),
-            Type::Struct(ref fields) => write!(f, "{{ {} }}", {
-                let fields: Vec<_> = fields
-                    .iter()
-                    .map(|(label, ty)| format!("{}: {}", label, ty))
-                    .collect();
-                fields.join(", ")
+            Type::Tuple(ref elems) => write!(f, "{{ {} }}", {
+                let elems: Vec<_> = elems.iter().map(|ty| ty.to_string()).collect();
+                elems.join(", ")
             }),
         }
     }
