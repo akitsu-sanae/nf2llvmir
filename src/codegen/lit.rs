@@ -1,6 +1,5 @@
 use super::*;
 use llvm::core::*;
-use std::ffi::CString;
 
 pub fn bool(b: bool, context: LContext) -> LValue {
     unsafe { LLVMConstInt(LLVMInt1TypeInContext(context), b as u64, 0) }

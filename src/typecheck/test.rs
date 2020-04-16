@@ -63,7 +63,7 @@ fn array_test() {
             name: Ident::new("a"),
             params: vec![(Ident::new("idx"), Type::Int)],
             ret_type: Type::Int,
-            body: Expr::ArrayAt(
+            body: Expr::Load(box Expr::ArrayAt(
                 box Expr::Const(Literal::Array(
                     vec![
                         Expr::Const(Literal::Int(1)),
@@ -73,7 +73,7 @@ fn array_test() {
                     Type::Int,
                 )),
                 box Expr::Load(box Expr::Var(Ident::new("idx"))),
-            ),
+            )),
         }],
         body: Expr::Call(
             box Expr::Var(Ident::new("a")),

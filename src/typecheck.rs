@@ -38,11 +38,15 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
             env = env.add(name.clone(), typ1);
             check_expr(e2, &env)
         }
-        Expr::Var(ref name) => Ok(Type::Pointer(
-            box env
+        Expr::Var(ref name) => {
+            let ty = env
                 .lookup(name)
-                .ok_or(Error::UnboundVariable(name.clone()))?,
-        )),
+                .ok_or(Error::UnboundVariable(name.clone()))?;
+            Ok(match ty {
+                Type::Array(_, _) | Type::Tuple(_) => ty,
+                _ => Type::Pointer(box ty),
+            })
+        }
         Expr::Load(box ref e) => {
             if let Type::Pointer(box ty) = check_expr(e, env)? {
                 Ok(ty)
@@ -107,7 +111,7 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
             let idx_ty = check_expr(idx, env)?;
             if idx_ty == Type::Int {
                 if let Type::Array(box elem_ty, _) = arr_ty {
-                    Ok(elem_ty)
+                    Ok(Type::Pointer(box elem_ty))
                 } else {
                     Err(Error::IndexingForNonArray(arr.clone(), arr_ty))
                 }
@@ -118,7 +122,7 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
         Expr::TupleAt(box ref e, ref idx) => {
             if let Type::Tuple(elems) = check_expr(e, env)? {
                 if let Some(ty) = elems.into_iter().nth(*idx) {
-                    Ok(ty)
+                    Ok(Type::Pointer(box ty))
                 } else {
                     Err(Error::InvalidTupleAccess(e.clone(), *idx))
                 }

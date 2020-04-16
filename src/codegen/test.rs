@@ -183,6 +183,7 @@ fn array_test() {
             ))),
         ),
     };
+    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Void));
     let expected = r#"
 ; ModuleID = 'output'
 source_filename = "output"
@@ -223,7 +224,7 @@ fn tuple_test() {
             box Expr::Load(box Expr::TupleAt(box Expr::Var(Ident::new("a")), 1)),
         ),
     };
-
+    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
     let expected = r#"
 ; ModuleID = 'output'
 source_filename = "output"
