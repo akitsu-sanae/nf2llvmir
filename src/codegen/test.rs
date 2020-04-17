@@ -248,3 +248,38 @@ entry:
 "#;
     codegen_check(&nf, expected.trim());
 }
+
+#[test]
+fn external_func_test() {
+    // rand()
+    let nf = Nf {
+        funcs: vec![],
+        body: Expr::Call(
+            box Expr::Const(Literal::ExternalFunc(
+                "rand".to_string(),
+                Type::Func(vec![], box Type::Int),
+            )),
+            vec![],
+        ),
+    };
+    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @main() {
+entry:
+  %0 = call i32 @rand()
+  ret i32 %0
+}
+
+declare i32 @rand()
+"#;
+    codegen_check(&nf, expected.trim());
+}

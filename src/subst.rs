@@ -21,6 +21,7 @@ impl Expr {
             Expr::Const(Literal::Tuple(elems)) => Expr::Const(Literal::Tuple(
                 elems.into_iter().map(|e_| e_.subst_expr(name, e)).collect(),
             )),
+            Expr::Const(Literal::ExternalFunc(_, _)) => self,
             Expr::Let(ref name_, _, _, _) if name_ == name => self,
             Expr::Let(name_, typ, box e1, box e2) => Expr::Let(
                 name_,

@@ -41,6 +41,7 @@ impl fmt::Display for Literal {
                 let elems: Vec<_> = elems.iter().map(|e| e.to_string()).collect();
                 elems.join(", ")
             }),
+            ExternalFunc(ref name, ref typ) => write!(f, "external_func {} : {}", name, typ),
         }
     }
 }

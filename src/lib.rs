@@ -58,6 +58,7 @@ pub enum Literal {
     Int(i32),
     Array(Vec<Expr>, Type),
     Tuple(Vec<Expr>),
+    ExternalFunc(String, Type),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

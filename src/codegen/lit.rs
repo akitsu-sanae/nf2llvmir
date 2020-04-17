@@ -1,5 +1,6 @@
 use super::*;
 use llvm::core::*;
+use std::ffi::CString;
 
 pub fn bool(b: bool, context: LContext) -> LValue {
     unsafe { LLVMConstInt(LLVMInt1TypeInContext(context), b as u64, 0) }
@@ -44,4 +45,8 @@ pub fn tuple(mut fields: Vec<LValue>, module: LModule) -> LValue {
         LLVMSetGlobalConstant(global_var, 1);
         global_var
     }
+}
+pub fn external_func(name: String, typ: LType, module: LModule) -> LValue {
+    let name = CString::new(name.into_bytes()).unwrap();
+    unsafe { llvm::core::LLVMAddFunction(module, name.as_ptr(), typ) }
 }

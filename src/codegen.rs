@@ -158,6 +158,10 @@ fn apply_literal(lit: &Literal, env: &Env<LValue>, base: &Base) -> Result<LValue
             let elems = elems?;
             Ok(lit::tuple(elems, base.module))
         }
+        Literal::ExternalFunc(ref name, ref typ) => {
+            let typ = apply_type(typ, base)?;
+            Ok(lit::external_func(name.clone(), typ, base.module))
+        }
     }
 }
 

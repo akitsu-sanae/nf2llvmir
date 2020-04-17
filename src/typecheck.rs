@@ -155,5 +155,6 @@ fn check_literal(lit: &Literal, env: &Env<Type>) -> Result<Type, Error> {
             let elems: Result<Vec<Type>, _> = elems.iter().map(|e| check_expr(e, env)).collect();
             Ok(Type::Tuple(elems?))
         }
+        Literal::ExternalFunc(_, typ) => Ok(Type::Pointer(box typ.clone())),
     }
 }
