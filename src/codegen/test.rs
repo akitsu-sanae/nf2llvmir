@@ -164,7 +164,7 @@ entry:
 }
 
 #[test]
-fn array_test() {
+fn const_array_test() {
     let nf = Nf {
         funcs: vec![],
         body: Expr::Let(
@@ -210,7 +210,69 @@ entry:
 }
 
 #[test]
-fn tuple_test() {
+fn array_test() {
+    // let a = 114;
+    // let arr = {a, 514};
+    // printnum arr[0];
+    let nf = Nf {
+        funcs: vec![],
+        body: Expr::Let(
+            Ident::new("a"),
+            Type::Int,
+            box Expr::Const(Literal::Int(114)),
+            box Expr::Let(
+                Ident::new("arr"),
+                Type::Array(box Type::Int, 2),
+                box Expr::Const(Literal::Array(
+                    vec![
+                        Expr::Load(box Expr::Var(Ident::new("a"))),
+                        Expr::Const(Literal::Int(514)),
+                    ],
+                    Type::Int,
+                )),
+                box Expr::PrintNum(box Expr::Load(box Expr::ArrayAt(
+                    box Expr::Var(Ident::new("arr")),
+                    box Expr::Const(Literal::Int(0)),
+                ))),
+            ),
+        ),
+    };
+    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Void));
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @main() {
+entry:
+  %a = alloca i32
+  store i32 114, i32* %a
+  %0 = load i32, i32* %a
+  %1 = alloca [2 x i32]
+  %2 = getelementptr [2 x i32], [2 x i32]* %1, i32 0, i32 0
+  store i32 %0, i32* %2
+  %3 = getelementptr [2 x i32], [2 x i32]* %1, i32 0, i32 1
+  store i32 514, i32* %3
+  %arr = alloca [2 x i32]
+  %4 = bitcast [2 x i32]* %arr to i8*
+  %5 = bitcast [2 x i32]* %1 to i8*
+  call void (i8*, i8*, ...) @memcpy(i8* %4, i8* %5, i64 mul nuw (i64 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i64), i64 2))
+  %6 = getelementptr [2 x i32], [2 x i32]* %arr, i32 0, i32 0
+  %7 = load i32, i32* %6
+  %8 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([3 x i8], [3 x i8]* @.builtin.format.num, i32 0, i32 0), i32 %7)
+  ret i32 %8
+}
+"#;
+    codegen_check(&nf, expected.trim());
+}
+
+#[test]
+fn const_tuple_test() {
     // let a = (114, 514); a.0
     let nf = Nf {
         funcs: vec![],
@@ -244,6 +306,61 @@ entry:
   %1 = getelementptr { i32, i32 }, { i32, i32 }* %a, i32 0, i32 1
   %2 = load i32, i32* %1
   ret i32 %2
+}
+"#;
+    codegen_check(&nf, expected.trim());
+}
+
+#[test]
+fn tuple_test() {
+    // let a = 1;
+    // let tuple = (a, 2);
+    // tuple.0
+    let nf = Nf {
+        funcs: vec![],
+        body: Expr::Let(
+            Ident::new("a"),
+            Type::Int,
+            box Expr::Const(Literal::Int(1)),
+            box Expr::Let(
+                Ident::new("tuple"),
+                Type::Tuple(vec![Type::Int, Type::Int]),
+                box Expr::Const(Literal::Tuple(vec![
+                    Expr::Load(box Expr::Var(Ident::new("a"))),
+                    Expr::Const(Literal::Int(2)),
+                ])),
+                box Expr::Load(box Expr::TupleAt(box Expr::Var(Ident::new("tuple")), 1)),
+            ),
+        ),
+    };
+    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @main() {
+entry:
+  %a = alloca i32
+  store i32 1, i32* %a
+  %0 = load i32, i32* %a
+  %1 = alloca { i32, i32 }
+  %2 = getelementptr { i32, i32 }, { i32, i32 }* %1, i32 0, i32 0
+  store i32 %0, i32* %2
+  %3 = getelementptr { i32, i32 }, { i32, i32 }* %1, i32 0, i32 1
+  store i32 2, i32* %3
+  %tuple = alloca { i32, i32 }
+  %4 = bitcast { i32, i32 }* %tuple to i8*
+  %5 = bitcast { i32, i32 }* %1 to i8*
+  call void (i8*, i8*, ...) @memcpy(i8* %4, i8* %5, i64 mul nuw (i64 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i64), i64 2))
+  %6 = getelementptr { i32, i32 }, { i32, i32 }* %tuple, i32 0, i32 1
+  %7 = load i32, i32* %6
+  ret i32 %7
 }
 "#;
     codegen_check(&nf, expected.trim());

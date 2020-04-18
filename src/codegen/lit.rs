@@ -25,25 +25,44 @@ pub fn int32(n: i32, context: LContext) -> LValue {
     unsafe { LLVMConstInt(typ::int32(context), n as u64, 0) }
 }
 
-pub fn array(mut elems: Vec<LValue>, typ: LType, module: LModule) -> LValue {
+pub fn array(mut elems: Vec<LValue>, typ: LType, base: &Base) -> LValue {
     let arr_type = typ::array(typ, elems.len());
     unsafe {
-        let arr = LLVMConstArray(typ, elems.as_mut_ptr(), elems.len() as u32);
-        let global_var = LLVMAddGlobal(module, arr_type, "\0".as_ptr() as *const _);
-        LLVMSetInitializer(global_var, arr);
-        LLVMSetGlobalConstant(global_var, 1);
-        global_var
+        if elems.iter().all(|v| LLVMIsConstant(*v) != 0) {
+            let arr = LLVMConstArray(typ, elems.as_mut_ptr(), elems.len() as u32);
+            let global_var = LLVMAddGlobal(base.module, arr_type, "\0".as_ptr() as *const _);
+            LLVMSetInitializer(global_var, arr);
+            LLVMSetGlobalConstant(global_var, 1);
+            global_var
+        } else {
+            let var = LLVMBuildAlloca(base.builder, arr_type, b"\0".as_ptr() as *const _);
+            for (idx, elem) in elems.into_iter().enumerate() {
+                let elem_var = build::gep(var, lit::int32(idx as i32, base.context), base);
+                build::store(elem_var, elem, base.builder);
+            }
+            var
+        }
     }
 }
 
-pub fn tuple(mut fields: Vec<LValue>, module: LModule) -> LValue {
+pub fn tuple(mut fields: Vec<LValue>, base: &Base) -> LValue {
     unsafe {
-        let value = LLVMConstStruct(fields.as_mut_ptr(), fields.len() as libc::c_uint, 0); // packed
-        let typ = type_of(value);
-        let global_var = LLVMAddGlobal(module, typ, b"\0".as_ptr() as *const _);
-        LLVMSetInitializer(global_var, value);
-        LLVMSetGlobalConstant(global_var, 1);
-        global_var
+        if fields.iter().all(|v| LLVMIsConstant(*v) != 0) {
+            let value = LLVMConstStruct(fields.as_mut_ptr(), fields.len() as libc::c_uint, 0); // packed
+            let typ = type_of(value);
+            let global_var = LLVMAddGlobal(base.module, typ, b"\0".as_ptr() as *const _);
+            LLVMSetInitializer(global_var, value);
+            LLVMSetGlobalConstant(global_var, 1);
+            global_var
+        } else {
+            let typ = typ::tuple(fields.iter().map(|v| type_of(*v)).collect());
+            let var = LLVMBuildAlloca(base.builder, typ, b"\0".as_ptr() as *const _);
+            for (idx, field) in fields.into_iter().enumerate() {
+                let field_var = build::gep(var, lit::int32(idx as i32, base.context), base);
+                build::store(field_var, field, base.builder);
+            }
+            var
+        }
     }
 }
 pub fn external_func(name: String, typ: LType, module: LModule) -> LValue {

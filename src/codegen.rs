@@ -151,12 +151,12 @@ fn apply_literal(lit: &Literal, env: &Env<LValue>, base: &Base) -> Result<LValue
             let elem_ty = apply_type(elem_ty, base)?;
             let arr: Result<_, _> = arr.iter().map(|e| apply_expr(e, env, base)).collect();
             let arr = arr?;
-            Ok(lit::array(arr, elem_ty, base.module))
+            Ok(lit::array(arr, elem_ty, base))
         }
         Literal::Tuple(ref elems) => {
             let elems: Result<_, _> = elems.iter().map(|e| apply_expr(e, env, base)).collect();
             let elems = elems?;
-            Ok(lit::tuple(elems, base.module))
+            Ok(lit::tuple(elems, base))
         }
         Literal::ExternalFunc(ref name, ref typ) => {
             let typ = apply_type(typ, base)?;
