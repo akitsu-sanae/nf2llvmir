@@ -32,6 +32,9 @@ impl Expr {
             Expr::Var(name_) if &name_ == name => e.clone(),
             Expr::Var(_) => self,
             Expr::Load(box e_) => Expr::Load(box e_.subst_expr(name, e)),
+            Expr::Assign(box e1, box e2) => {
+                Expr::Assign(box e1.subst_expr(name, e), box e2.subst_expr(name, e))
+            }
             Expr::Call(box f, args) => Expr::Call(
                 box f.subst_expr(name, e),
                 args.into_iter().map(|e_| e_.subst_expr(name, e)).collect(),

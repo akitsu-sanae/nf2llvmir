@@ -128,6 +128,11 @@ fn apply_expr(e: &Expr, env: &Env<LValue>, base: &Base) -> Result<LValue, Error>
             let e = apply_expr(e, env, base)?;
             Ok(build::load(e, base.builder))
         }
+        Expr::Assign(box ref e1, box ref e2) => {
+            let lhs = apply_expr(e1, env, base)?;
+            let rhs = apply_expr(e2, env, base)?;
+            Ok(build::store(lhs, rhs, base.builder))
+        }
         Expr::Call(box ref func, ref args) => {
             let func = apply_expr(func, env, base)?;
             let args: Result<_, _> = args.iter().map(|arg| apply_expr(arg, env, base)).collect();

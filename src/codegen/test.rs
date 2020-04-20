@@ -164,6 +164,49 @@ entry:
 }
 
 #[test]
+fn assign_test() {
+    let nf = Nf {
+        funcs: vec![],
+        body: Expr::Let(
+            Ident::new("a"),
+            Type::Int,
+            box Expr::Const(Literal::Int(42)),
+            box Expr::Let(
+                Ident::new("dummy"),
+                Type::Pointer(box Type::Int),
+                box Expr::Assign(
+                    box Expr::Var(Ident::new("a")),
+                    box Expr::Const(Literal::Int(4)),
+                ),
+                box Expr::Load(box Expr::Var(Ident::new("a"))),
+            ),
+        ),
+    };
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @main() {
+entry:
+  %a = alloca i32
+  store i32 42, i32* %a
+  store i32 4, i32* %a
+  %dummy = alloca i32*
+  store i32* %a, i32** %dummy
+  %0 = load i32, i32* %a
+  ret i32 %0
+}
+"#;
+    codegen_check(&nf, expected.trim());
+}
+
+#[test]
 fn const_array_test() {
     let nf = Nf {
         funcs: vec![],

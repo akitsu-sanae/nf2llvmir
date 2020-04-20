@@ -54,6 +54,18 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
                 Err(Error::DereferenceNonpointer(e.clone()))
             }
         }
+        Expr::Assign(box ref e1, box ref e2) => {
+            if let Type::Pointer(box ty1) = check_expr(e1, env)? {
+                let ty2 = check_expr(e2, env)?;
+                if ty1 == ty2 {
+                    Ok(Type::Pointer(box ty1))
+                } else {
+                    Err(Error::UnmatchAssign(e2.clone(), ty1, ty2))
+                }
+            } else {
+                Err(Error::AssignToNonpointer(e1.clone()))
+            }
+        }
         Expr::Call(box ref e, ref args) => {
             let e_ty = check_expr(e, env)?;
             if let Type::Pointer(box Type::Func(params, box ret_type)) = e_ty {

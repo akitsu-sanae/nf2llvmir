@@ -10,7 +10,8 @@ impl fmt::Display for Expr {
                 write!(f, "let {}: {} = {}; {}", name, typ, e1, e2)
             }
             Var(ref name) => write!(f, "{}", name),
-            Load(ref e) => write!(f, "load ({})", e),
+            Load(box ref e) => write!(f, "load ({})", e),
+            Assign(box ref e1, box ref e2) => write!(f, "{} <- ({})", e1, e2),
             Call(box ref func, ref args) => write!(f, "{}({})", func, {
                 let args: Vec<String> = args.iter().map(|arg| arg.to_string()).collect();
                 args.join(", ")

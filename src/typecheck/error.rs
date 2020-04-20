@@ -11,6 +11,8 @@ pub enum Error {
     UnmatchIfBranches(Expr, Type, Type),
     UnmatchIfCond(Expr, Type),
     DereferenceNonpointer(Expr),
+    AssignToNonpointer(Expr),
+    UnmatchAssign(Expr, Type, Type),
     InvalidBinOp(BinOp, Expr, Expr),
     IndexingForNonArray(Expr, Type),
     IndexingWithNonInteger(Expr, Type),
@@ -54,6 +56,12 @@ impl fmt::Display for Error {
                 f,
                 "dereferenced expression, `{}`, does not have pointer type",
                 e
+            ),
+            AssignToNonpointer(e) => write!(f, "assign to non-pointer {}", e),
+            UnmatchAssign(e, left_ty, right_ty) => write!(
+                f,
+                "{} was expected to be {}, but actually {}",
+                e, left_ty, right_ty
             ),
             InvalidBinOp(op, e1, e2) => write!(
                 f,

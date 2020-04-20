@@ -43,6 +43,7 @@ pub enum Expr {
     Let(Ident, Type, Box<Expr>, Box<Expr>),
     Var(Ident),
     Load(Box<Expr>),
+    Assign(Box<Expr>, Box<Expr>),
     Call(Box<Expr>, Vec<Expr>),
     If(Box<Expr>, Box<Expr>, Box<Expr>),
     BinOp(BinOp, Box<Expr>, Box<Expr>),

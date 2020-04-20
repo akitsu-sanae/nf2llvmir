@@ -81,7 +81,10 @@ pub fn declare_tuple(name: &str, typ: LType, init: LValue, base: &Base) -> LValu
 }
 
 pub fn store(var: LValue, expr: LValue, builder: LBuilder) -> LValue {
-    unsafe { LLVMBuildStore(builder, expr, var) }
+    unsafe {
+        LLVMBuildStore(builder, expr, var);
+        var
+    }
 }
 
 pub fn load(var: LValue, builder: LBuilder) -> LValue {
