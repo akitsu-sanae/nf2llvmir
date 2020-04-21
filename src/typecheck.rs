@@ -43,7 +43,7 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
                 .lookup(name)
                 .ok_or(Error::UnboundVariable(name.clone()))?;
             Ok(match ty {
-                Type::Array(_, _) | Type::Tuple(_) => ty,
+                Type::Array(_, _) => ty,
                 _ => Type::Pointer(box ty),
             })
         }
@@ -132,7 +132,7 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
             }
         }
         Expr::TupleAt(box ref e, ref idx) => {
-            if let Type::Tuple(elems) = check_expr(e, env)? {
+            if let Type::Pointer(box Type::Tuple(elems)) = check_expr(e, env)? {
                 if let Some(ty) = elems.into_iter().nth(*idx) {
                     Ok(Type::Pointer(box ty))
                 } else {

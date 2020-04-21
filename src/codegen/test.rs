@@ -410,6 +410,65 @@ entry:
 }
 
 #[test]
+fn tuple_arg_test() {
+    // func foo x:{int, int}: int {
+    //     return 42;
+    // }
+    // let a = {30, 12};
+    // foo(load a)
+    let nf = Nf {
+        funcs: vec![Func {
+            name: Ident::new("foo"),
+            params: vec![(Ident::new("x"), Type::Tuple(vec![Type::Int, Type::Int]))],
+            ret_type: Type::Int,
+            body: Expr::Const(Literal::Int(42)),
+        }],
+        body: Expr::Let(
+            Ident::new("a"),
+            Type::Tuple(vec![Type::Int, Type::Int]),
+            box Expr::Const(Literal::Tuple(vec![
+                Expr::Const(Literal::Int(30)),
+                Expr::Const(Literal::Int(12)),
+            ])),
+            box Expr::Call(
+                box Expr::Var(Ident::new("foo")),
+                vec![Expr::Load(box Expr::Var(Ident::new("a")))],
+            ),
+        ),
+    };
+    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    let expected = r#"
+; ModuleID = 'output'
+source_filename = "output"
+
+@.builtin.format.num = global [3 x i8] c"%d\0A"
+@0 = constant { i32, i32 } { i32 30, i32 12 }
+
+declare i32 @printf(i8*, ...)
+
+declare void @memcpy(i8*, i8*, ...)
+
+define i32 @foo({ i32, i32 }) {
+entry:
+  %x = alloca { i32, i32 }
+  store { i32, i32 } %0, { i32, i32 }* %x
+  ret i32 42
+}
+
+define i32 @main() {
+entry:
+  %a = alloca { i32, i32 }
+  %0 = bitcast { i32, i32 }* %a to i8*
+  call void (i8*, i8*, ...) @memcpy(i8* %0, i8* bitcast ({ i32, i32 }* @0 to i8*), i64 mul nuw (i64 ptrtoint (i32* getelementptr (i32, i32* null, i32 1) to i64), i64 2))
+  %1 = load { i32, i32 }, { i32, i32 }* %a
+  %2 = call i32 @foo({ i32, i32 } %1)
+  ret i32 %2
+}
+"#;
+    codegen_check(&nf, expected.trim());
+}
+
+#[test]
 fn external_func_test() {
     // rand()
     let nf = Nf {
