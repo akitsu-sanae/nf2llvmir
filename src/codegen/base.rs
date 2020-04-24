@@ -49,7 +49,6 @@ impl Drop for Base {
 fn add_builtin(context: LContext, module: LModule) {
     add_printf_function(context, module);
     add_num_format_str(context, module);
-    add_memcpy_function(context, module);
 }
 
 fn add_printf_function(context: LContext, module: LModule) {
@@ -67,16 +66,5 @@ fn add_num_format_str(context: LContext, module: LModule) {
         let global_var =
             llvm::core::LLVMAddGlobal(module, typ::type_of(init), num_format_str.as_ptr());
         llvm::core::LLVMSetInitializer(global_var, init);
-    }
-}
-
-fn add_memcpy_function(context: LContext, module: LModule) {
-    let name = CString::new("memcpy").unwrap();
-    let typ = typ::variadic_func(
-        &mut vec![typ::char_ptr(context), typ::char_ptr(context)],
-        typ::void(context),
-    );
-    unsafe {
-        llvm::core::LLVMAddFunction(module, name.as_ptr(), typ);
     }
 }

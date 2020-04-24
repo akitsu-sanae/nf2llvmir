@@ -12,74 +12,6 @@ pub fn declare(name: &str, typ: LType, init: LValue, builder: LBuilder) -> LValu
     }
 }
 
-pub fn declare_array(name: &str, typ: LType, init: LValue, base: &Base) -> LValue {
-    let name = CString::new(name).unwrap();
-    let memcpy_name = CString::new("memcpy").unwrap();
-    unsafe {
-        let var = LLVMBuildAlloca(base.builder, typ, name.as_ptr());
-
-        let var_ptr = LLVMBuildBitCast(
-            base.builder,
-            var,
-            typ::char_ptr(base.context),
-            b"\0".as_ptr() as *const _,
-        );
-        let init_ptr = LLVMBuildBitCast(
-            base.builder,
-            init,
-            typ::char_ptr(base.context),
-            b"\0".as_ptr() as *const _,
-        );
-        let len = typ::size_of(typ);
-
-        let memcpy = LLVMGetNamedFunction(base.module, memcpy_name.as_ptr());
-        let mut args = vec![var_ptr, init_ptr, len];
-        LLVMBuildCall(
-            base.builder,
-            memcpy,
-            args.as_mut_ptr(),
-            args.len() as libc::c_uint,
-            b"\0".as_ptr() as *const _,
-        );
-
-        var
-    }
-}
-
-pub fn declare_tuple(name: &str, typ: LType, init: LValue, base: &Base) -> LValue {
-    let name = CString::new(name).unwrap();
-    let memcpy_name = CString::new("memcpy").unwrap();
-    unsafe {
-        let var = LLVMBuildAlloca(base.builder, typ, name.as_ptr());
-
-        let var_ptr = LLVMBuildBitCast(
-            base.builder,
-            var,
-            typ::char_ptr(base.context),
-            b"\0".as_ptr() as *const _,
-        );
-        let init_ptr = LLVMBuildBitCast(
-            base.builder,
-            init,
-            typ::char_ptr(base.context),
-            b"\0".as_ptr() as *const _,
-        );
-        let len = typ::size_of(typ);
-
-        let memcpy = LLVMGetNamedFunction(base.module, memcpy_name.as_ptr());
-        let mut args = vec![var_ptr, init_ptr, len];
-        LLVMBuildCall(
-            base.builder,
-            memcpy,
-            args.as_mut_ptr(),
-            args.len() as libc::c_uint,
-            b"\0".as_ptr() as *const _,
-        );
-
-        var
-    }
-}
-
 pub fn store(var: LValue, expr: LValue, builder: LBuilder) -> LValue {
     unsafe {
         LLVMBuildStore(builder, expr, var);
@@ -236,6 +168,17 @@ pub fn gep(arr: LValue, idx: LValue, base: &Base) -> LValue {
             arr,
             indices.as_mut_ptr(),
             indices.len() as libc::c_uint,
+            b"\0".as_ptr() as *const _,
+        )
+    }
+}
+
+pub fn tuple_gep(e: LValue, idx: i32, base: &Base) -> LValue {
+    unsafe {
+        LLVMBuildStructGEP(
+            base.builder,
+            e,
+            idx as libc::c_uint,
             b"\0".as_ptr() as *const _,
         )
     }

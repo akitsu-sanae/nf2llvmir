@@ -41,7 +41,3 @@ pub fn tuple(mut elems: Vec<LType>) -> LType {
 pub fn type_of(v: LValue) -> LType {
     unsafe { LLVMTypeOf(v) }
 }
-
-pub fn size_of(typ: LType) -> LValue {
-    unsafe { LLVMSizeOf(typ) }
-}

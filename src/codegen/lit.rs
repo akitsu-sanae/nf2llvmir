@@ -29,18 +29,14 @@ pub fn array(mut elems: Vec<LValue>, typ: LType, base: &Base) -> LValue {
     let arr_type = typ::array(typ, elems.len());
     unsafe {
         if elems.iter().all(|v| LLVMIsConstant(*v) != 0) {
-            let arr = LLVMConstArray(typ, elems.as_mut_ptr(), elems.len() as u32);
-            let global_var = LLVMAddGlobal(base.module, arr_type, "\0".as_ptr() as *const _);
-            LLVMSetInitializer(global_var, arr);
-            LLVMSetGlobalConstant(global_var, 1);
-            global_var
+            LLVMConstArray(typ, elems.as_mut_ptr(), elems.len() as u32)
         } else {
             let var = LLVMBuildAlloca(base.builder, arr_type, b"\0".as_ptr() as *const _);
             for (idx, elem) in elems.into_iter().enumerate() {
                 let elem_var = build::gep(var, lit::int32(idx as i32, base.context), base);
                 build::store(elem_var, elem, base.builder);
             }
-            var
+            build::load(var, base.builder)
         }
     }
 }
@@ -48,12 +44,8 @@ pub fn array(mut elems: Vec<LValue>, typ: LType, base: &Base) -> LValue {
 pub fn tuple(mut fields: Vec<LValue>, base: &Base) -> LValue {
     unsafe {
         if fields.iter().all(|v| LLVMIsConstant(*v) != 0) {
-            let value = LLVMConstStruct(fields.as_mut_ptr(), fields.len() as libc::c_uint, 0); // packed
-            let typ = type_of(value);
-            let global_var = LLVMAddGlobal(base.module, typ, b"\0".as_ptr() as *const _);
-            LLVMSetInitializer(global_var, value);
-            LLVMSetGlobalConstant(global_var, 1);
-            global_var
+            LLVMConstStruct(fields.as_mut_ptr(), fields.len() as libc::c_uint, 0)
+        // packed
         } else {
             let typ = typ::tuple(fields.iter().map(|v| type_of(*v)).collect());
             let var = LLVMBuildAlloca(base.builder, typ, b"\0".as_ptr() as *const _);
@@ -61,7 +53,7 @@ pub fn tuple(mut fields: Vec<LValue>, base: &Base) -> LValue {
                 let field_var = build::gep(var, lit::int32(idx as i32, base.context), base);
                 build::store(field_var, field, base.builder);
             }
-            var
+            build::load(var, base.builder)
         }
     }
 }

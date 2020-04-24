@@ -112,11 +112,7 @@ fn apply_expr(e: &Expr, env: &Env<LValue>, base: &Base) -> Result<LValue, Error>
                 };
                 let l_typ = apply_type(&typ, base)?;
                 let l_e1 = apply_expr(e1, env, base)?;
-                let var = match &typ {
-                    Type::Array(_, _) => build::declare_array(&name.0, l_typ, l_e1, base),
-                    Type::Tuple(_) => build::declare_tuple(&name.0, l_typ, l_e1, base),
-                    _ => build::declare(&name.0, l_typ, l_e1, base.builder),
-                };
+                let var = build::declare(&name.0, l_typ, l_e1, base.builder);
                 let env = env.add(name.clone(), var);
                 apply_expr(e2, &env, base)
             }
@@ -237,8 +233,7 @@ fn apply_array_at(arr: &Expr, idx: &Expr, env: &Env<LValue>, base: &Base) -> Res
 
 fn apply_tuple_at(e: &Expr, idx: usize, env: &Env<LValue>, base: &Base) -> Result<LValue, Error> {
     let e = apply_expr(e, env, base)?;
-    let idx = lit::int32(idx as i32, base.context);
-    Ok(build::gep(e, idx, base))
+    Ok(build::tuple_gep(e, idx as i32, base))
 }
 
 fn apply_printnum_expr(e: &Expr, env: &Env<LValue>, base: &Base) -> Result<LValue, Error> {
