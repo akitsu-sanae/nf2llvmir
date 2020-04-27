@@ -18,7 +18,7 @@ use ident::Ident;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Nf {
     pub funcs: Vec<Func>,
-    pub body: Expr,
+    pub body: Option<Expr>,
 }
 
 impl Nf {

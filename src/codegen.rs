@@ -39,14 +39,16 @@ fn apply_nf(base: &Base, nf: &Nf) -> Result<(), Error> {
         add_function_body(base, gen_func, func, &env)?;
     }
 
-    let main_func = Func {
-        name: Ident::new("main"),
-        params: vec![],
-        ret_type: Type::Int,
-        body: nf.body.clone(),
-    };
-    let gen_main_func = add_function(base, &main_func)?;
-    add_function_body(base, gen_main_func, &main_func, &env)?;
+    if let Some(ref body) = &nf.body {
+        let main_func = Func {
+            name: Ident::new("main"),
+            params: vec![],
+            ret_type: Type::Int,
+            body: body.clone(),
+        };
+        let gen_main_func = add_function(base, &main_func)?;
+        add_function_body(base, gen_main_func, &main_func, &env)?;
+    }
     Ok(())
 }
 

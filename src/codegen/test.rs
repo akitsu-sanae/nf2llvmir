@@ -23,7 +23,7 @@ fn codegen_check(nf: &Nf, name: &str, expected_output: &str, expected_status: i3
 fn primitive_test() {
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Const(Literal::Int(42)),
+        body: Some(Expr::Const(Literal::Int(42))),
     };
     codegen_check(&nf, "primitive", "", 42);
 }
@@ -44,7 +44,7 @@ fn func_test() {
                 box Expr::Load(box Expr::Var(Ident::new("b"))),
             ),
         }],
-        body: Expr::Let(
+        body: Some(Expr::Let(
             Ident::new("dummy"),
             Type::Void,
             box Expr::PrintNum(box Expr::Call(
@@ -55,7 +55,7 @@ fn func_test() {
                 ],
             )),
             box Expr::Const(Literal::Int(0)),
-        ),
+        )),
     };
     codegen_check(&nf, "func", "628\n", 0);
 }
@@ -64,11 +64,11 @@ fn func_test() {
 fn if_test() {
     let nf = Nf {
         funcs: vec![],
-        body: Expr::If(
+        body: Some(Expr::If(
             box Expr::Const(Literal::Bool(true)),
             box Expr::Const(Literal::Int(42)),
             box Expr::Const(Literal::Int(32)),
-        ),
+        )),
     };
     codegen_check(&nf, "if", "", 42);
 }
@@ -77,12 +77,12 @@ fn if_test() {
 fn let_test() {
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Let(
+        body: Some(Expr::Let(
             Ident::new("a"),
             Type::Int,
             box Expr::Const(Literal::Int(42)),
             box Expr::Const(Literal::Int(2)),
-        ),
+        )),
     };
     codegen_check(&nf, "let", "", 2);
 }
@@ -94,7 +94,7 @@ fn assign_test() {
     // return (load a);
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Let(
+        body: Some(Expr::Let(
             Ident::new("a"),
             Type::Int,
             box Expr::Const(Literal::Int(42)),
@@ -107,7 +107,7 @@ fn assign_test() {
                 ),
                 box Expr::Load(box Expr::Var(Ident::new("a"))),
             ),
-        ),
+        )),
     };
     codegen_check(&nf, "assign", "", 4);
 }
@@ -118,7 +118,7 @@ fn const_array_test() {
     // return (load arr[0]);
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Let(
+        body: Some(Expr::Let(
             Ident::new("arr"),
             Type::Array(box Type::Int, 2),
             box Expr::Const(Literal::Array(
@@ -132,9 +132,9 @@ fn const_array_test() {
                 box Expr::Var(Ident::new("arr")),
                 box Expr::Const(Literal::Int(0)),
             )),
-        ),
+        )),
     };
-    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    assert_eq!(crate::typecheck::check(&nf), Ok(Some(Type::Int)));
     codegen_check(&nf, "const_array", "", 114);
 }
 
@@ -145,7 +145,7 @@ fn array_test() {
     // return arr[0];
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Let(
+        body: Some(Expr::Let(
             Ident::new("a"),
             Type::Int,
             box Expr::Const(Literal::Int(114)),
@@ -164,9 +164,9 @@ fn array_test() {
                     box Expr::Const(Literal::Int(0)),
                 )),
             ),
-        ),
+        )),
     };
-    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    assert_eq!(crate::typecheck::check(&nf), Ok(Some(Type::Int)));
     codegen_check(&nf, "array", "", 114);
 }
 
@@ -176,7 +176,7 @@ fn const_tuple_test() {
     // printnum a.1;
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Let(
+        body: Some(Expr::Let(
             Ident::new("a"),
             Type::Tuple(vec![Type::Int, Type::Int]),
             box Expr::Const(Literal::Tuple(vec![
@@ -192,9 +192,9 @@ fn const_tuple_test() {
                 ))),
                 box Expr::Const(Literal::Int(0)),
             ),
-        ),
+        )),
     };
-    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    assert_eq!(crate::typecheck::check(&nf), Ok(Some(Type::Int)));
     codegen_check(&nf, "const_tuple", "514\n", 0);
 }
 
@@ -205,7 +205,7 @@ fn tuple_test() {
     // tuple.1
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Let(
+        body: Some(Expr::Let(
             Ident::new("a"),
             Type::Int,
             box Expr::Const(Literal::Int(1)),
@@ -218,9 +218,9 @@ fn tuple_test() {
                 ])),
                 box Expr::Load(box Expr::TupleAt(box Expr::Var(Ident::new("tuple")), 1)),
             ),
-        ),
+        )),
     };
-    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    assert_eq!(crate::typecheck::check(&nf), Ok(Some(Type::Int)));
     codegen_check(&nf, "tuple", "", 2);
 }
 
@@ -237,15 +237,15 @@ fn tuple_arg_test() {
             ret_type: Type::Int,
             body: Expr::Const(Literal::Int(42)),
         }],
-        body: Expr::Call(
+        body: Some(Expr::Call(
             box Expr::Var(Ident::new("foo")),
             vec![Expr::Const(Literal::Tuple(vec![
                 Expr::Const(Literal::Int(30)),
                 Expr::Const(Literal::Int(12)),
             ]))],
-        ),
+        )),
     };
-    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    assert_eq!(crate::typecheck::check(&nf), Ok(Some(Type::Int)));
     codegen_check(&nf, "tuple-arg", "", 42);
 }
 
@@ -254,14 +254,14 @@ fn external_func_test() {
     // rand()
     let nf = Nf {
         funcs: vec![],
-        body: Expr::Call(
+        body: Some(Expr::Call(
             box Expr::Const(Literal::ExternalFunc(
                 "abs".to_string(),
                 Type::Func(vec![Type::Int], box Type::Int),
             )),
             vec![Expr::Const(Literal::Int(-3))],
-        ),
+        )),
     };
-    assert_eq!(crate::typecheck::check(&nf), Ok(Type::Int));
+    assert_eq!(crate::typecheck::check(&nf), Ok(Some(Type::Int)));
     codegen_check(&nf, "rand", "", 3); // first value when seed is 1 (default)
 }

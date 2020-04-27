@@ -6,7 +6,7 @@ mod test;
 use crate::{env::Env, *};
 use error::Error;
 
-pub fn check(nf: &Nf) -> Result<Type, Error> {
+pub fn check(nf: &Nf) -> Result<Option<Type>, Error> {
     let mut env = Env::new();
     for func in nf.funcs.iter() {
         let params: Vec<Type> = func.params.iter().map(|param| param.1.clone()).collect();
@@ -23,7 +23,11 @@ pub fn check(nf: &Nf) -> Result<Type, Error> {
         }
         check_expr(&func.body, &env)?;
     }
-    check_expr(&nf.body, &env)
+    Ok(if let Some(ref body) = &nf.body {
+        Some(check_expr(body, &env)?)
+    } else {
+        None
+    })
 }
 
 fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
