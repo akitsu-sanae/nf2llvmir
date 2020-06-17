@@ -12,14 +12,14 @@ pub fn check(nf: &Nf) -> Result<Option<Type>, Error> {
         let params: Vec<Type> = func.params.iter().map(|param| param.1.clone()).collect();
         env = env.add(
             func.name.clone(),
-            Type::Func(params, box func.ret_type.clone()),
+            Type::Pointer(box Type::Func(params, box func.ret_type.clone())),
         )
     }
 
     for func in nf.funcs.iter() {
         let mut env = env.clone();
         for (ref name, ref ty) in func.params.iter() {
-            env = env.add(name.clone(), ty.clone());
+            env = env.add(name.clone(), Type::Pointer(box ty.clone()));
         }
         check_expr(&func.body, &env)?;
     }
@@ -34,23 +34,15 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
     match e {
         Expr::Const(lit) => check_literal(lit, env),
         Expr::Let(ref name, ref typ, box ref e1, box ref e2) => {
-            let typ1 = check_expr(e1, env)?;
-            if typ != &typ1 {
-                return Err(Error::UnmatchLet(e1.clone(), typ1));
+            let typ_ = check_expr(e1, env)?;
+            if typ != &typ_ {
+                return Err(Error::UnmatchLet(e1.clone(), typ_));
             }
             let mut env = env.clone();
-            env = env.add(name.clone(), typ1);
+            env = env.add(name.clone(), Type::Pointer(box typ_));
             check_expr(e2, &env)
         }
-        Expr::Var(ref name) => {
-            let ty = env
-                .lookup(name)
-                .ok_or(Error::UnboundVariable(name.clone()))?;
-            Ok(match ty {
-                Type::Array(_, _) => ty,
-                _ => Type::Pointer(box ty),
-            })
-        }
+        Expr::Var(ref name) => env.lookup(name).ok_or(Error::UnboundVariable(name.clone())),
         Expr::Load(box ref e) => {
             if let Type::Pointer(box ty) = check_expr(e, env)? {
                 Ok(ty)
@@ -126,7 +118,7 @@ fn check_expr(e: &Expr, env: &Env<Type>) -> Result<Type, Error> {
             let arr_ty = check_expr(arr, env)?;
             let idx_ty = check_expr(idx, env)?;
             if idx_ty == Type::Int {
-                if let Type::Array(box elem_ty, _) = arr_ty {
+                if let Type::Pointer(box Type::Array(box elem_ty, _)) = arr_ty {
                     Ok(Type::Pointer(box elem_ty))
                 } else {
                     Err(Error::IndexingForNonArray(arr.clone(), arr_ty))

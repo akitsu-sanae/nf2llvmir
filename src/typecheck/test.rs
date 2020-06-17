@@ -57,27 +57,24 @@ fn apply_test() {
 
 #[test]
 fn array_test() {
-    use crate::Func;
+    // int[2] arr = {114, 514};
+    // return (load arr[0]);
     let nf = Nf {
-        funcs: vec![Func {
-            name: Ident::new("a"),
-            params: vec![(Ident::new("idx"), Type::Int)],
-            ret_type: Type::Int,
-            body: Expr::Load(box Expr::ArrayAt(
-                box Expr::Const(Literal::Array(
-                    vec![
-                        Expr::Const(Literal::Int(1)),
-                        Expr::Const(Literal::Int(2)),
-                        Expr::Const(Literal::Int(3)),
-                    ],
-                    Type::Int,
-                )),
-                box Expr::Load(box Expr::Var(Ident::new("idx"))),
+        funcs: vec![],
+        body: Some(Expr::Let(
+            Ident::new("arr"),
+            Type::Array(box Type::Int, 2),
+            box Expr::Const(Literal::Array(
+                vec![
+                    Expr::Const(Literal::Int(114)),
+                    Expr::Const(Literal::Int(514)),
+                ],
+                Type::Int,
             )),
-        }],
-        body: Some(Expr::Call(
-            box Expr::Var(Ident::new("a")),
-            vec![Expr::Const(Literal::Int(1))],
+            box Expr::Load(box Expr::ArrayAt(
+                box Expr::Var(Ident::new("arr")),
+                box Expr::Const(Literal::Int(0)),
+            )),
         )),
     };
     assert_eq!(check(&nf), Ok(Some(Type::Int)));
