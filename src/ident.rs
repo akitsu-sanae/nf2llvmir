@@ -9,8 +9,8 @@ impl Ident {
         Ident(name.to_string())
     }
 
-    pub fn fresh_tuple_name() -> Ident {
-        Ident(format!("tuple{}", COUNTER.fetch_add(1, SeqCst)))
+    pub fn fresh_name() -> Ident {
+        Ident(format!("fresh.{}", COUNTER.fetch_add(1, SeqCst)))
     }
 }
 
